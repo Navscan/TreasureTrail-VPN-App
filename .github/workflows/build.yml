@@ -1,12 +1,10 @@
-name: Build Release APK
+name: Diagnose Keystore
 
 on:
-  push:
-    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  build:
+  diagnose:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -21,16 +19,19 @@ jobs:
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
 
-      - name: Build Release APK
-        run: chmod +x gradlew && ./gradlew assembleRelease
+      - name: Test Keystore Password
+        run: |
+          keytool -list -keystore keystore.jks -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -alias ttvpn
+        continue-on-error: false
+
+      - name: Test Key Password
+        run: |
+          keytool -exportcert -alias ttvpn -keystore keystore.jks -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" -file /tmp/test.crt
+        continue-on-error: false
+
+      - name: If all passes, build release APK
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-
-      - name: Rename APK
-        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/TTVPN.apk
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: TTVPN
-          path: app/build/outputs/apk/release/TTVPN.apk
