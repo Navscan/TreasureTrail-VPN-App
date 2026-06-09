@@ -57,7 +57,7 @@ PersistentKeepalive = 25
                 override fun onStateChange(state: Tunnel.State) {}
             }
             currentTunnel = tunnel
-            backend.setState(tunnel, config, "TTVPN™")
+            backend.setState(tunnel, Tunnel.State.UP, config)
             showNotification("TTVPN™", "Protected by PayBridge (Pty) Ltd")
         } catch (e: Exception) {
             e.printStackTrace()
@@ -65,7 +65,7 @@ PersistentKeepalive = 25
     }
 
     private fun stopVpn() {
-        currentTunnel?.let { backend.setState(it, null, null) }
+        currentTunnel?.let { backend.setState(it, Tunnel.State.DOWN, null) }
         stopForeground(true)
         stopSelf()
     }
