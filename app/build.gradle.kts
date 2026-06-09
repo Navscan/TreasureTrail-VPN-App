@@ -18,9 +18,9 @@ android {
     signingConfigs {
         create("release") {
             storeFile = rootProject.file("keystore.jks")
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyAlias = "ttvpn"   // hardcoded
-            keyPassword = System.getenv("KEYSTORE_PASSWORD") // same as store password
+            storePassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
+            keyAlias = "ttvpn"
+            keyPassword = System.getenv("KEYSTORE_PASSWORD") ?: ""
         }
     }
 
