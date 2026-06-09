@@ -1,10 +1,12 @@
-name: Diagnose Keystore
+name: Build Release APK
 
 on:
+  push:
+    branches: [ "main" ]
   workflow_dispatch:
 
 jobs:
-  diagnose:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -15,23 +17,24 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Decode Keystore
+      - name: Generate keystore from password secret
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+          keytool -genkey -v -keystore keystore.jks -alias ttvpn \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Shaun Cooper, OU=PayBridge, O=PayBridge, L=Cape Town, ST=Western Cape, C=ZA" \
+            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
+            -keypass "${{ secrets.KEYSTORE_PASSWORD }}"
 
-      - name: Test Keystore Password
-        run: |
-          keytool -list -keystore keystore.jks -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -alias ttvpn
-        continue-on-error: false
-
-      - name: Test Key Password
-        run: |
-          keytool -exportcert -alias ttvpn -keystore keystore.jks -storepass "${{ secrets.KEYSTORE_PASSWORD }}" -keypass "${{ secrets.KEY_PASSWORD }}" -file /tmp/test.crt
-        continue-on-error: false
-
-      - name: If all passes, build release APK
-        run: |
-          chmod +x gradlew
-          ./gradlew assembleRelease
+      - name: Build Release APK
+        run: chmod +x gradlew && ./gradlew assembleRelease
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+
+      - name: Rename APK
+        run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/TTVPN.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: TTVPN
+          path: app/build/outputs/apk/release/TTVPN.apk
