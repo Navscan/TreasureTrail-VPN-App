@@ -30,7 +30,7 @@ class VpnService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!isRunning) {
+        if (currentTunnel == null) {
             startVpn()
         }
         return START_STICKY
@@ -63,10 +63,14 @@ PersistentKeepalive = 25
                 }
             }
             currentTunnel = tunnel
-            showNotification("TTVPN™", "Protected by PayBridge (Pty) Ltd")
+            try {
+                showNotification("TTVPN™", "Protected by PayBridge (Pty) Ltd")
+            } catch (_: Exception) {
+            }
             backend.setState(tunnel, Tunnel.State.UP, config)
         } catch (e: Exception) {
             isRunning = false
+            currentTunnel = null
             stopVpn()
         }
     }
@@ -77,6 +81,7 @@ PersistentKeepalive = 25
         } catch (_: Exception) {
         }
         isRunning = false
+        currentTunnel = null
         stopForeground(true)
         stopSelf()
     }
