@@ -6,16 +6,14 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.ServiceInfo
-import android.net.VpnService
 import android.os.Build
-import android.os.ParcelFileDescriptor
 import androidx.core.app.NotificationCompat
 import com.wireguard.android.backend.GoBackend
 import com.wireguard.android.backend.Tunnel
 import com.wireguard.config.Config
 import java.io.ByteArrayInputStream
 
-class VpnService : VpnService() {
+class VpnService : GoBackend.VpnService() {
     private lateinit var backend: GoBackend
     private var currentTunnel: Tunnel? = null
 
@@ -30,6 +28,7 @@ class VpnService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        super.onStartCommand(intent, flags, startId)
         if (currentTunnel == null) {
             startVpn()
         }
