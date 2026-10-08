@@ -65,12 +65,6 @@ PersistentKeepalive = 25
             currentTunnel = tunnel
             showNotification("TTVPN™", "Protected by PayBridge (Pty) Ltd")
             backend.setState(tunnel, Tunnel.State.UP, config)
-                .whenComplete { _, throwable ->
-                    if (throwable != null) {
-                        isRunning = false
-                        stopVpn()
-                    }
-                }
         } catch (e: Exception) {
             isRunning = false
             stopVpn()
