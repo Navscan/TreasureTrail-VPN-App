@@ -5,6 +5,7 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.net.VpnService
 import android.os.Build
 import android.os.ParcelFileDescriptor
@@ -19,6 +20,7 @@ class VpnService : VpnService() {
     private var currentTunnel: Tunnel? = null
 
     companion object {
+        @Volatile
         var isRunning = false
     }
 
@@ -28,7 +30,9 @@ class VpnService : VpnService() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startVpn()
+        if (!isRunning) {
+            startVpn()
+        }
         return START_STICKY
     }
 
@@ -54,18 +58,31 @@ PersistentKeepalive = 25
             val config = Config.parse(ByteArrayInputStream(configString.toByteArray()))
             val tunnel = object : Tunnel {
                 override fun getName(): String = "TTVPN"
-                override fun onStateChange(state: Tunnel.State) {}
+                override fun onStateChange(state: Tunnel.State) {
+                    isRunning = (state == Tunnel.State.UP)
+                }
             }
             currentTunnel = tunnel
-            backend.setState(tunnel, Tunnel.State.UP, config)
             showNotification("TTVPN™", "Protected by PayBridge (Pty) Ltd")
+            backend.setState(tunnel, Tunnel.State.UP, config)
+                .whenComplete { _, throwable ->
+                    if (throwable != null) {
+                        isRunning = false
+                        stopVpn()
+                    }
+                }
         } catch (e: Exception) {
-            e.printStackTrace()
+            isRunning = false
+            stopVpn()
         }
     }
 
     private fun stopVpn() {
-        currentTunnel?.let { backend.setState(it, Tunnel.State.DOWN, null) }
+        try {
+            currentTunnel?.let { backend.setState(it, Tunnel.State.DOWN, null) }
+        } catch (_: Exception) {
+        }
+        isRunning = false
         stopForeground(true)
         stopSelf()
     }
@@ -83,6 +100,10 @@ PersistentKeepalive = 25
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setContentIntent(pendingIntent)
             .build()
-        startForeground(1, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(1, notification)
+        }
     }
 }
