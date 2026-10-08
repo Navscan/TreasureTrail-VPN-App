@@ -4,7 +4,6 @@ import android.Manifest
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
@@ -60,7 +59,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun requestConsentThenStart() {
-        val prepareIntent = VpnService.prepare(this)
+        val prepareIntent = android.net.VpnService.prepare(this)
         if (prepareIntent != null) {
             vpnPermissionLauncher.launch(prepareIntent)
         } else {
