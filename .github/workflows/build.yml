@@ -17,13 +17,9 @@ jobs:
           java-version: '17'
           distribution: 'temurin'
 
-      - name: Generate keystore from password secret
+      - name: Decode signing keystore from secret
         run: |
-          keytool -genkey -v -keystore keystore.jks -alias ttvpn \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Shaun Cooper, OU=PayBridge, O=PayBridge, L=Cape Town, ST=Western Cape, C=ZA" \
-            -storepass "${{ secrets.KEYSTORE_PASSWORD }}" \
-            -keypass "${{ secrets.KEYSTORE_PASSWORD }}"
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
 
       - name: Build Release APK
         run: chmod +x gradlew && ./gradlew assembleRelease
