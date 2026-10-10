@@ -104,8 +104,6 @@ class MainActivity : AppCompatActivity() {
         handleIntent(intent)
     }
 
-    // ---------- intent handling ----------
-
     private fun handleIntent(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
         val data = intent.data ?: return
@@ -122,8 +120,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
-
-    // ---------- toggle ----------
 
     private fun onToggleTapped() {
         if (!ConfigStore.hasConfig(this)) {
@@ -155,8 +151,6 @@ class MainActivity : AppCompatActivity() {
     private fun stopVpnService() {
         stopService(Intent(this, VpnService::class.java))
     }
-
-    // ---------- voucher dialog ----------
 
     private fun showVoucherDialog(prefill: String?) {
         val view = LayoutInflater.from(this).inflate(R.layout.voucher, null)
@@ -273,8 +267,6 @@ class MainActivity : AppCompatActivity() {
             .show()
     }
 
-    // ---------- voucher utilities ----------
-
     private fun formatVoucher(raw: String): String {
         val clean = raw.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
         val body = if (clean.startsWith("TVPN")) clean.substring(4) else clean
@@ -310,8 +302,6 @@ class MainActivity : AppCompatActivity() {
         "user_not_found" -> getString(R.string.error_user_not_found)
         else -> getString(R.string.error_unknown)
     }
-
-    // ---------- ui refresh ----------
 
     private fun refreshUi() {
         val hasConfig = ConfigStore.hasConfig(this)
@@ -366,7 +356,7 @@ class MainActivity : AppCompatActivity() {
         txtState.text = text
         txtState.setTextColor(c)
         txtSubstate.text = subtext
-        dotStatus.background.setTint(c)
+        dotStatus.background?.setTint(c)
         btnToggle.text = buttonText
         btnToggle.isEnabled = true
     }
