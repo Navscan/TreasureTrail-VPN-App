@@ -10,4 +10,5 @@
     <color name="text_main">#EEF4FF</color>
     <color name="state_amber">#FFA500</color>
     <color name="state_red">#E63946</color>
+    <color name="state_green">#00C853</color>
 </resources>
