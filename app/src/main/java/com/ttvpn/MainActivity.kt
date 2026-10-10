@@ -34,6 +34,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var cardMeta: MaterialCardView
     private lateinit var txtEndpoint: TextView
     private lateinit var txtDuration: TextView
+    private lateinit var txtData: TextView
     private lateinit var txtEntitlement: TextView
 
     private val handler = Handler(Looper.getMainLooper())
@@ -74,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         cardMeta = findViewById(R.id.cardMeta)
         txtEndpoint = findViewById(R.id.txtEndpoint)
         txtDuration = findViewById(R.id.txtDuration)
+        txtData = findViewById(R.id.txtData)
         txtEntitlement = findViewById(R.id.txtEntitlement)
 
         btnToggle.setOnClickListener { onToggleTapped() }
@@ -362,7 +364,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateMeta(running: Boolean) {
-        txtEndpoint.text = "treasuretrail.africa/ttvpn"
+        txtEndpoint.text = Config.WG_ENDPOINT_DISPLAY
 
         if (running) {
             val startedAt = ConfigStore.getTunnelStartedAt(this)
@@ -371,8 +373,10 @@ class MainActivity : AppCompatActivity() {
             } else {
                 getString(R.string.duration_placeholder)
             }
+            txtData.text = formatData(VpnService.statsRx, VpnService.statsTx)
         } else {
             txtDuration.text = getString(R.string.duration_placeholder)
+            txtData.text = getString(R.string.data_placeholder)
         }
 
         val expires = ConfigStore.getSubscriptionExpiresAt(this)
@@ -392,6 +396,11 @@ class MainActivity : AppCompatActivity() {
         val s = totalSec % 60
         return if (h > 0) String.format(Locale.US, "%d:%02d:%02d", h, m, s)
         else String.format(Locale.US, "%02d:%02d", m, s)
+    }
+
+    private fun formatData(rx: Long, tx: Long): String {
+        val mb = 1024.0 * 1024.0
+        return String.format(Locale.US, "↓%.1f ↑%.1f MB", rx / mb, tx / mb)
     }
 
     private fun requestNotificationPermissionIfNeeded() {

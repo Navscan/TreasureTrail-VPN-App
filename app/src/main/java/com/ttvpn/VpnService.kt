@@ -7,6 +7,8 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import androidx.core.app.NotificationCompat
 import com.wireguard.android.backend.GoBackend
 import com.wireguard.android.backend.Tunnel
@@ -15,6 +17,21 @@ import java.io.ByteArrayInputStream
 class VpnService : GoBackend.VpnService() {
     private lateinit var backend: GoBackend
     private var currentTunnel: Tunnel? = null
+
+    private val statsHandler = Handler(Looper.getMainLooper())
+
+    private val statsRunnable = object : Runnable {
+        override fun run() {
+            updateStats()
+            statsHandler.postDelayed(this, Config.STATS_POLL_INTERVAL_MS)
+        }
+    }
+
+    companion object {
+        @Volatile var isRunning = false
+        @Volatile var statsRx: Long = 0L
+        @Volatile var statsTx: Long = 0L
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -63,6 +80,7 @@ class VpnService : GoBackend.VpnService() {
             }
 
             backend.setState(tunnel, Tunnel.State.UP, parsed)
+            startStatsPolling()
         } catch (e: Exception) {
             ConfigStore.setVpnRunning(this, false)
             currentTunnel = null
@@ -71,6 +89,7 @@ class VpnService : GoBackend.VpnService() {
     }
 
     private fun stopVpn() {
+        stopStatsPolling()
         try {
             currentTunnel?.let { backend.setState(it, Tunnel.State.DOWN, null) }
         } catch (_: Exception) {
@@ -79,6 +98,27 @@ class VpnService : GoBackend.VpnService() {
         currentTunnel = null
         stopForeground(true)
         stopSelf()
+    }
+
+    private fun startStatsPolling() {
+        statsHandler.removeCallbacks(statsRunnable)
+        statsHandler.post(statsRunnable)
+    }
+
+    private fun stopStatsPolling() {
+        statsHandler.removeCallbacks(statsRunnable)
+        statsRx = 0L
+        statsTx = 0L
+    }
+
+    private fun updateStats() {
+        val tunnel = currentTunnel ?: return
+        try {
+            val stats = backend.getStatistics(tunnel)
+            statsRx = stats.totalRx()
+            statsTx = stats.totalTx()
+        } catch (_: Exception) {
+        }
     }
 
     private fun showNotification() {
