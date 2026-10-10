@@ -19,6 +19,7 @@
 
     <string name="label_endpoint">Endpoint</string>
     <string name="label_duration">Duration</string>
+    <string name="label_data">Data</string>
     <string name="label_entitlement">Entitlement</string>
 
     <string name="dialog_voucher_title">Enter voucher code</string>
@@ -38,4 +39,9 @@
     <string name="entitlement_active">Active</string>
     <string name="entitlement_expires">Expires %1$s</string>
     <string name="duration_placeholder">--:--</string>
+    <string name="data_placeholder">— / —</string>
+
+    <string name="wordmark_tt1">T</string>
+    <string name="wordmark_tt2">T</string>
+    <string name="wordmark_vpn">vpn</string>
 </resources>

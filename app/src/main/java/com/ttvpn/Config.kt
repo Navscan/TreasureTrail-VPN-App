@@ -5,6 +5,8 @@ object Config {
     const val ENDPOINT_REGISTER = "$BASE_URL/api/register"
     const val ENDPOINT_HEALTH = "$BASE_URL/api/health"
 
+    const val WG_ENDPOINT_DISPLAY = "154.66.198.207:51820"
+
     const val HTTP_CONNECT_TIMEOUT_MS = 10_000
     const val HTTP_READ_TIMEOUT_MS = 20_000
 
@@ -21,4 +23,5 @@ object Config {
     const val NOTIFICATION_ID = 1
 
     const val STATE_POLL_INTERVAL_MS = 1_000L
+    const val STATS_POLL_INTERVAL_MS = 1_000L
 }
