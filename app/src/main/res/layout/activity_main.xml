@@ -12,6 +12,7 @@
         android:orientation="vertical"
         android:padding="20dp">
 
+        <!-- Header: wordmark + status dot -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -62,6 +63,7 @@
                 android:background="@drawable/bg_dot" />
         </LinearLayout>
 
+        <!-- Hero state -->
         <TextView
             android:id="@+id/txtState"
             android:layout_width="match_parent"
@@ -83,6 +85,7 @@
             android:textColor="@color/muted_label"
             android:textSize="14sp" />
 
+        <!-- Primary action -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnToggle"
             android:layout_width="match_parent"
@@ -95,11 +98,24 @@
             app:backgroundTint="@color/brand_gold"
             app:cornerRadius="12dp" />
 
+        <!-- Lock toggle -->
+        <CheckBox
+            android:id="@+id/checkLock"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="20dp"
+            android:buttonTint="@color/brand_gold"
+            android:text="@string/action_lock"
+            android:textColor="@color/text_main"
+            android:textSize="14sp" />
+
+        <!-- Session metadata -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardMeta"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="40dp"
+            android:layout_marginTop="32dp"
             android:visibility="gone"
             app:cardBackgroundColor="@color/card_surface"
             app:cardCornerRadius="12dp"
@@ -224,6 +240,18 @@
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
+
+        <!-- Exit app: closes the window only, does NOT stop the tunnel -->
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btnExit"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:layout_marginTop="40dp"
+            android:text="@string/action_exit"
+            android:textColor="@color/muted_label"
+            android:textSize="13sp" />
 
     </LinearLayout>
 </ScrollView>

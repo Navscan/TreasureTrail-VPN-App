@@ -6,6 +6,8 @@ object Config {
     const val ENDPOINT_HEALTH = "$BASE_URL/api/health"
 
     const val WG_ENDPOINT_DISPLAY = "154.66.198.207:51820"
+    const val WG_SERVER_FLAG = "🇿🇦"
+    const val WG_SERVER_COUNTRY = "South Africa"
 
     const val HTTP_CONNECT_TIMEOUT_MS = 10_000
     const val HTTP_READ_TIMEOUT_MS = 20_000
@@ -17,6 +19,7 @@ object Config {
     const val PREF_SUBSCRIPTION_EXPIRES = "subscription_expires"
     const val PREF_VPN_RUNNING = "vpn_running"
     const val PREF_TUNNEL_STARTED_AT = "tunnel_started_at"
+    const val PREF_LOCK_ENABLED = "lock_enabled"
 
     const val TUNNEL_NAME = "TTVPN"
     const val NOTIFICATION_CHANNEL_ID = "vpn"
@@ -24,4 +27,5 @@ object Config {
 
     const val STATE_POLL_INTERVAL_MS = 1_000L
     const val STATS_POLL_INTERVAL_MS = 1_000L
+    const val RECONNECT_DELAY_MS = 1_500L
 }

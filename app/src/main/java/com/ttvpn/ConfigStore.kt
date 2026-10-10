@@ -46,6 +46,13 @@ object ConfigStore {
     fun getTunnelStartedAt(context: Context): Long =
         prefs(context).getLong(Config.PREF_TUNNEL_STARTED_AT, 0L)
 
+    fun setLockEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(Config.PREF_LOCK_ENABLED, enabled).apply()
+    }
+
+    fun isLockEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(Config.PREF_LOCK_ENABLED, false)
+
     fun clear(context: Context) {
         prefs(context).edit().clear().apply()
     }

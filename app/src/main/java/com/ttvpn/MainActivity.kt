@@ -16,6 +16,7 @@ import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
@@ -28,6 +29,8 @@ import java.util.concurrent.Executors
 class MainActivity : AppCompatActivity() {
 
     private lateinit var btnToggle: Button
+    private lateinit var btnExit: Button
+    private lateinit var checkLock: CheckBox
     private lateinit var txtState: TextView
     private lateinit var txtSubstate: TextView
     private lateinit var dotStatus: View
@@ -42,6 +45,7 @@ class MainActivity : AppCompatActivity() {
 
     private var pendingStart = false
     private var isFormattingVoucher = false
+    private var suppressLockChange = false
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -69,6 +73,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         btnToggle = findViewById(R.id.btnToggle)
+        btnExit = findViewById(R.id.btnExit)
+        checkLock = findViewById(R.id.checkLock)
         txtState = findViewById(R.id.txtState)
         txtSubstate = findViewById(R.id.txtSubstate)
         dotStatus = findViewById(R.id.dotStatus)
@@ -79,6 +85,16 @@ class MainActivity : AppCompatActivity() {
         txtEntitlement = findViewById(R.id.txtEntitlement)
 
         btnToggle.setOnClickListener { onToggleTapped() }
+        btnExit.setOnClickListener { onExitTapped() }
+
+        checkLock.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressLockChange) return@setOnCheckedChangeListener
+            ConfigStore.setLockEnabled(this, isChecked)
+            if (isChecked && ConfigStore.hasConfig(this) && !ConfigStore.isVpnRunning(this)) {
+                pendingStart = true
+                requestConsentThenStart()
+            }
+        }
 
         requestNotificationPermissionIfNeeded()
         refreshUi()
@@ -129,6 +145,10 @@ class MainActivity : AppCompatActivity() {
             return
         }
         if (ConfigStore.isVpnRunning(this)) {
+            if (ConfigStore.isLockEnabled(this)) {
+                showLockedDialog()
+                return
+            }
             stopVpnService()
         } else {
             pendingStart = true
@@ -146,12 +166,27 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun doStartVpnService() {
-        startService(Intent(this, VpnService::class.java))
+        VpnService.start(this)
         pendingStart = false
     }
 
     private fun stopVpnService() {
-        stopService(Intent(this, VpnService::class.java))
+        VpnService.stop(this)
+    }
+
+    // Exit closes the app. It does NOT stop the VPN service. The tunnel
+    // keeps running in the background, the foreground notification stays
+    // in the status bar, and tapping that notification reopens the app.
+    private fun onExitTapped() {
+        finishAndRemoveTask()
+    }
+
+    private fun showLockedDialog() {
+        AlertDialog.Builder(this)
+            .setTitle(R.string.dialog_locked_title)
+            .setMessage(R.string.dialog_locked_message)
+            .setPositiveButton(R.string.dialog_locked_ok, null)
+            .show()
     }
 
     private fun showVoucherDialog(prefill: String?) {
@@ -310,12 +345,18 @@ class MainActivity : AppCompatActivity() {
         val running = ConfigStore.isVpnRunning(this)
         val connecting = pendingStart && !running
 
+        // Keep the lock checkbox in sync without firing the listener.
+        suppressLockChange = true
+        checkLock.isChecked = ConfigStore.isLockEnabled(this)
+        suppressLockChange = false
+
         when {
             !hasConfig -> {
                 applyState(
                     text = getString(R.string.state_not_setup),
                     subtext = getString(R.string.substate_not_setup),
-                    colour = R.color.muted_label,
+                    wordColour = R.color.muted_label,
+                    dotColour = R.color.state_red,
                     buttonText = getString(R.string.action_enter_voucher)
                 )
                 cardMeta.visibility = View.GONE
@@ -324,7 +365,8 @@ class MainActivity : AppCompatActivity() {
                 applyState(
                     text = getString(R.string.state_connecting),
                     subtext = getString(R.string.substate_connecting),
-                    colour = R.color.state_amber,
+                    wordColour = R.color.state_amber,
+                    dotColour = R.color.state_amber,
                     buttonText = getString(R.string.action_disconnect)
                 )
                 cardMeta.visibility = View.VISIBLE
@@ -334,7 +376,8 @@ class MainActivity : AppCompatActivity() {
                 applyState(
                     text = getString(R.string.state_connected),
                     subtext = getString(R.string.substate_connected),
-                    colour = R.color.brand_gold,
+                    wordColour = R.color.brand_gold,
+                    dotColour = R.color.state_green,
                     buttonText = getString(R.string.action_disconnect)
                 )
                 cardMeta.visibility = View.VISIBLE
@@ -344,7 +387,8 @@ class MainActivity : AppCompatActivity() {
                 applyState(
                     text = getString(R.string.state_disconnected),
                     subtext = getString(R.string.substate_disconnected),
-                    colour = R.color.muted_label,
+                    wordColour = R.color.muted_label,
+                    dotColour = R.color.state_red,
                     buttonText = getString(R.string.action_connect)
                 )
                 cardMeta.visibility = View.VISIBLE
@@ -353,18 +397,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyState(text: String, subtext: String, colour: Int, buttonText: String) {
-        val c = ContextCompat.getColor(this, colour)
+    private fun applyState(
+        text: String,
+        subtext: String,
+        wordColour: Int,
+        dotColour: Int,
+        buttonText: String
+    ) {
+        val wordC = ContextCompat.getColor(this, wordColour)
+        val dotC = ContextCompat.getColor(this, dotColour)
+
         txtState.text = text
-        txtState.setTextColor(c)
+        txtState.setTextColor(wordC)
         txtSubstate.text = subtext
-        dotStatus.background?.setTint(c)
+        dotStatus.background?.setTint(dotC)
         btnToggle.text = buttonText
         btnToggle.isEnabled = true
     }
 
     private fun updateMeta(running: Boolean) {
-        txtEndpoint.text = Config.WG_ENDPOINT_DISPLAY
+        txtEndpoint.text = "${Config.WG_SERVER_FLAG}  ${Config.WG_ENDPOINT_DISPLAY}"
 
         if (running) {
             val startedAt = ConfigStore.getTunnelStartedAt(this)

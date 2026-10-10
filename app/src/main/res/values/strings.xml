@@ -16,6 +16,8 @@
     <string name="action_disconnect">Disconnect</string>
     <string name="action_enter_voucher">Enter voucher</string>
     <string name="action_change_voucher">Change voucher</string>
+    <string name="action_exit">Exit app</string>
+    <string name="action_lock">Lock VPN on</string>
 
     <string name="label_endpoint">Endpoint</string>
     <string name="label_duration">Duration</string>
@@ -26,6 +28,10 @@
     <string name="dialog_voucher_hint">Paste or type your code</string>
     <string name="dialog_voucher_cancel">Cancel</string>
     <string name="dialog_voucher_submit">Activate</string>
+
+    <string name="dialog_locked_title">VPN is locked on</string>
+    <string name="dialog_locked_message">Untick "Lock VPN on" to disconnect. The tunnel will keep running while the lock is active.</string>
+    <string name="dialog_locked_ok">OK</string>
 
     <string name="error_empty_voucher">Enter the full 12-character code.</string>
     <string name="error_voucher_not_found">Voucher not found. Check the code and try again.</string>
