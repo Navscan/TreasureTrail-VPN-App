@@ -29,8 +29,6 @@ class VpnService : GoBackend.VpnService() {
 
     companion object {
         @Volatile var isRunning = false
-        @Volatile var statsRx: Long = 0L
-        @Volatile var statsTx: Long = 0L
     }
 
     override fun onCreate() {
@@ -107,16 +105,15 @@ class VpnService : GoBackend.VpnService() {
 
     private fun stopStatsPolling() {
         statsHandler.removeCallbacks(statsRunnable)
-        statsRx = 0L
-        statsTx = 0L
+        Stats.clear()
     }
 
     private fun updateStats() {
         val tunnel = currentTunnel ?: return
         try {
             val stats = backend.getStatistics(tunnel)
-            statsRx = stats.totalRx()
-            statsTx = stats.totalTx()
+            Stats.rx = stats.totalRx()
+            Stats.tx = stats.totalTx()
         } catch (_: Exception) {
         }
     }

@@ -373,7 +373,7 @@ class MainActivity : AppCompatActivity() {
             } else {
                 getString(R.string.duration_placeholder)
             }
-            txtData.text = formatData(VpnService.statsRx, VpnService.statsTx)
+            txtData.text = formatData(Stats.rx, Stats.tx)
         } else {
             txtDuration.text = getString(R.string.duration_placeholder)
             txtData.text = getString(R.string.data_placeholder)
