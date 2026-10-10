@@ -3,6 +3,8 @@ package com.ttvpn
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
@@ -15,11 +17,11 @@ import android.view.LayoutInflater
 import android.view.View
 import android.widget.Button
 import android.widget.EditText
-import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import com.google.android.material.card.MaterialCardView
 import java.util.Locale
 import java.util.concurrent.Executors
 
@@ -27,17 +29,18 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var btnToggle: Button
     private lateinit var txtState: TextView
-    private lateinit var txtDot: TextView
-    private lateinit var cardMeta: LinearLayout
+    private lateinit var txtSubstate: TextView
+    private lateinit var dotStatus: View
+    private lateinit var cardMeta: MaterialCardView
     private lateinit var txtEndpoint: TextView
     private lateinit var txtDuration: TextView
     private lateinit var txtEntitlement: TextView
-    private lateinit var rowEntitlement: LinearLayout
 
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
 
     private var pendingStart = false
+    private var isFormattingVoucher = false
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -66,12 +69,12 @@ class MainActivity : AppCompatActivity() {
 
         btnToggle = findViewById(R.id.btnToggle)
         txtState = findViewById(R.id.txtState)
-        txtDot = findViewById(R.id.txtDot)
+        txtSubstate = findViewById(R.id.txtSubstate)
+        dotStatus = findViewById(R.id.dotStatus)
         cardMeta = findViewById(R.id.cardMeta)
         txtEndpoint = findViewById(R.id.txtEndpoint)
         txtDuration = findViewById(R.id.txtDuration)
         txtEntitlement = findViewById(R.id.txtEntitlement)
-        rowEntitlement = findViewById(R.id.rowEntitlement)
 
         btnToggle.setOnClickListener { onToggleTapped() }
 
@@ -97,21 +100,34 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
+        setIntent(intent)
         handleIntent(intent)
     }
 
+    // ---------- intent handling ----------
+
     private fun handleIntent(intent: Intent?) {
-        if (intent?.action == Intent.ACTION_VIEW) {
-            when (intent.data?.toString()) {
-                "treasuretrailvpn://start" -> onToggleTapped()
-                "treasuretrailvpn://stop" -> stopVpnService()
+        if (intent?.action != Intent.ACTION_VIEW) return
+        val data = intent.data ?: return
+        if (data.scheme != "treasuretrailvpn") return
+
+        when (data.host) {
+            "start" -> onToggleTapped()
+            "stop" -> stopVpnService()
+            "activate" -> {
+                val code = data.getQueryParameter("code")
+                if (!code.isNullOrEmpty()) {
+                    registerWithCode(code.trim().uppercase(Locale.US))
+                }
             }
         }
     }
 
+    // ---------- toggle ----------
+
     private fun onToggleTapped() {
         if (!ConfigStore.hasConfig(this)) {
-            showVoucherDialog()
+            showVoucherDialog(null)
             return
         }
         if (ConfigStore.isVpnRunning(this)) {
@@ -140,18 +156,33 @@ class MainActivity : AppCompatActivity() {
         stopService(Intent(this, VpnService::class.java))
     }
 
-    private fun showVoucherDialog() {
+    // ---------- voucher dialog ----------
+
+    private fun showVoucherDialog(prefill: String?) {
         val view = LayoutInflater.from(this).inflate(R.layout.voucher, null)
-        val seg1 = view.findViewById<EditText>(R.id.editSeg1)
-        val seg2 = view.findViewById<EditText>(R.id.editSeg2)
-        val seg3 = view.findViewById<EditText>(R.id.editSeg3)
+        val editVoucher = view.findViewById<EditText>(R.id.editVoucher)
         val txtError = view.findViewById<TextView>(R.id.txtError)
         val btnCancel = view.findViewById<Button>(R.id.btnCancel)
         val btnSubmit = view.findViewById<Button>(R.id.btnSubmit)
 
-        wireSegment(seg1, seg2)
-        wireSegment(seg2, seg3)
-        wireSegment(seg3, null)
+        editVoucher.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+            override fun afterTextChanged(s: Editable?) {
+                if (isFormattingVoucher) return
+                isFormattingVoucher = true
+                val formatted = formatVoucher(s?.toString().orEmpty())
+                editVoucher.setText(formatted)
+                editVoucher.setSelection(formatted.length)
+                isFormattingVoucher = false
+            }
+        })
+
+        val initial = prefill ?: readClipboardIfVoucher()
+        if (!initial.isNullOrEmpty()) {
+            editVoucher.setText(formatVoucher(initial))
+            editVoucher.setSelection(editVoucher.text.length)
+        }
 
         val dialog = AlertDialog.Builder(this)
             .setView(view)
@@ -161,17 +192,12 @@ class MainActivity : AppCompatActivity() {
         btnCancel.setOnClickListener { dialog.dismiss() }
 
         btnSubmit.setOnClickListener {
-            val part1 = seg1.text.toString().trim().uppercase(Locale.US)
-            val part2 = seg2.text.toString().trim().uppercase(Locale.US)
-            val part3 = seg3.text.toString().trim().uppercase(Locale.US)
-
-            if (part1.length < 4 || part2.length < 4 || part3.length < 4) {
+            val code = editVoucher.text.toString().trim()
+            if (!isVoucherComplete(code)) {
                 txtError.text = getString(R.string.error_empty_voucher)
                 txtError.visibility = View.VISIBLE
                 return@setOnClickListener
             }
-
-            val code = "TVPN-$part1-$part2-$part3"
 
             btnSubmit.isEnabled = false
             btnCancel.isEnabled = false
@@ -211,16 +237,69 @@ class MainActivity : AppCompatActivity() {
         dialog.show()
     }
 
-    private fun wireSegment(current: EditText, next: EditText?) {
-        current.addTextChangedListener(object : TextWatcher {
-            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
-            override fun afterTextChanged(s: Editable?) {
-                if (s != null && s.length == 4 && next != null && !next.hasFocus()) {
-                    next.requestFocus()
+    private fun registerWithCode(code: String) {
+        if (!isVoucherComplete(code)) return
+
+        executor.execute {
+            val result = ApiClient.register(code)
+            handler.post {
+                when (result) {
+                    is RegisterResult.Success -> {
+                        ConfigStore.saveConfig(
+                            this,
+                            result.config,
+                            result.assignedIp,
+                            result.subscriptionExpiresAt
+                        )
+                        pendingStart = true
+                        requestConsentThenStart()
+                        refreshUi()
+                    }
+                    is RegisterResult.Failure -> {
+                        showErrorDialog(reasonToMessage(result.reason))
+                    }
+                    RegisterResult.NetworkError -> {
+                        showErrorDialog(getString(R.string.error_network))
+                    }
                 }
             }
-        })
+        }
+    }
+
+    private fun showErrorDialog(message: String) {
+        AlertDialog.Builder(this)
+            .setMessage(message)
+            .setPositiveButton(android.R.string.ok, null)
+            .show()
+    }
+
+    // ---------- voucher utilities ----------
+
+    private fun formatVoucher(raw: String): String {
+        val clean = raw.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
+        val body = if (clean.startsWith("TVPN")) clean.substring(4) else clean
+        val trimmed = body.take(12)
+        val parts = trimmed.chunked(4)
+        return if (parts.isEmpty()) "TVPN-"
+        else "TVPN-" + parts.joinToString("-")
+    }
+
+    private fun isVoucherComplete(code: String): Boolean {
+        val clean = code.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
+        val body = if (clean.startsWith("TVPN")) clean.substring(4) else clean
+        return body.length == 12 && body.all { it.isLetterOrDigit() }
+    }
+
+    private fun readClipboardIfVoucher(): String? {
+        return try {
+            val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+            val text = cm.primaryClip?.getItemAt(0)?.text?.toString() ?: return null
+            val clean = text.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
+            val body = if (clean.startsWith("TVPN")) clean.substring(4) else clean
+            if (body.length == 12) text else null
+        } catch (_: Exception) {
+            null
+        }
     }
 
     private fun reasonToMessage(reason: String): String = when (reason) {
@@ -232,6 +311,8 @@ class MainActivity : AppCompatActivity() {
         else -> getString(R.string.error_unknown)
     }
 
+    // ---------- ui refresh ----------
+
     private fun refreshUi() {
         val hasConfig = ConfigStore.hasConfig(this)
         val running = ConfigStore.isVpnRunning(this)
@@ -241,18 +322,18 @@ class MainActivity : AppCompatActivity() {
             !hasConfig -> {
                 applyState(
                     text = getString(R.string.state_not_setup),
+                    subtext = getString(R.string.substate_not_setup),
                     colour = R.color.muted_label,
-                    buttonText = getString(R.string.action_enter_voucher),
-                    buttonEnabled = true
+                    buttonText = getString(R.string.action_enter_voucher)
                 )
                 cardMeta.visibility = View.GONE
             }
             connecting -> {
                 applyState(
                     text = getString(R.string.state_connecting),
+                    subtext = getString(R.string.substate_connecting),
                     colour = R.color.state_amber,
-                    buttonText = getString(R.string.action_disconnect),
-                    buttonEnabled = true
+                    buttonText = getString(R.string.action_disconnect)
                 )
                 cardMeta.visibility = View.VISIBLE
                 updateMeta(running = false)
@@ -260,9 +341,9 @@ class MainActivity : AppCompatActivity() {
             running -> {
                 applyState(
                     text = getString(R.string.state_connected),
+                    subtext = getString(R.string.substate_connected),
                     colour = R.color.brand_gold,
-                    buttonText = getString(R.string.action_disconnect),
-                    buttonEnabled = true
+                    buttonText = getString(R.string.action_disconnect)
                 )
                 cardMeta.visibility = View.VISIBLE
                 updateMeta(running = true)
@@ -270,9 +351,9 @@ class MainActivity : AppCompatActivity() {
             else -> {
                 applyState(
                     text = getString(R.string.state_disconnected),
+                    subtext = getString(R.string.substate_disconnected),
                     colour = R.color.muted_label,
-                    buttonText = getString(R.string.action_connect),
-                    buttonEnabled = true
+                    buttonText = getString(R.string.action_connect)
                 )
                 cardMeta.visibility = View.VISIBLE
                 updateMeta(running = false)
@@ -280,32 +361,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyState(text: String, colour: Int, buttonText: String, buttonEnabled: Boolean) {
+    private fun applyState(text: String, subtext: String, colour: Int, buttonText: String) {
         val c = ContextCompat.getColor(this, colour)
         txtState.text = text
         txtState.setTextColor(c)
-        txtDot.setTextColor(c)
+        txtSubstate.text = subtext
+        dotStatus.background.setTint(c)
         btnToggle.text = buttonText
-        btnToggle.isEnabled = buttonEnabled
+        btnToggle.isEnabled = true
     }
 
     private fun updateMeta(running: Boolean) {
-        txtEndpoint.text = Config.BASE_URL
+        txtEndpoint.text = "treasuretrail.africa/ttvpn"
 
         if (running) {
             val startedAt = ConfigStore.getTunnelStartedAt(this)
-            if (startedAt > 0L) {
-                val elapsed = System.currentTimeMillis() - startedAt
-                txtDuration.text = formatDuration(elapsed)
+            txtDuration.text = if (startedAt > 0L) {
+                formatDuration(System.currentTimeMillis() - startedAt)
             } else {
-                txtDuration.text = getString(R.string.duration_placeholder)
+                getString(R.string.duration_placeholder)
             }
         } else {
             txtDuration.text = getString(R.string.duration_placeholder)
         }
 
         val expires = ConfigStore.getSubscriptionExpiresAt(this)
-        rowEntitlement.visibility = View.VISIBLE
         if (expires.isNullOrEmpty()) {
             txtEntitlement.text = getString(R.string.entitlement_active)
             txtEntitlement.setTextColor(ContextCompat.getColor(this, R.color.brand_teal))
@@ -320,11 +400,8 @@ class MainActivity : AppCompatActivity() {
         val h = totalSec / 3600
         val m = (totalSec % 3600) / 60
         val s = totalSec % 60
-        return if (h > 0) {
-            String.format(Locale.US, "%d:%02d:%02d", h, m, s)
-        } else {
-            String.format(Locale.US, "%02d:%02d", m, s)
-        }
+        return if (h > 0) String.format(Locale.US, "%d:%02d:%02d", h, m, s)
+        else String.format(Locale.US, "%02d:%02d", m, s)
     }
 
     private fun requestNotificationPermissionIfNeeded() {

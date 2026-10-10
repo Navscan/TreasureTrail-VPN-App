@@ -3,9 +3,14 @@
     <string name="app_name">TTVPN™</string>
 
     <string name="state_disconnected">DISCONNECTED</string>
-    <string name="state_connecting">CONNECTING…</string>
+    <string name="state_connecting">CONNECTING</string>
     <string name="state_connected">CONNECTED</string>
     <string name="state_not_setup">NOT SET UP</string>
+
+    <string name="substate_not_setup">Enter a voucher to get started</string>
+    <string name="substate_disconnected">Tap connect to start your tunnel</string>
+    <string name="substate_connecting">Establishing secure tunnel…</string>
+    <string name="substate_connected">Your traffic is encrypted</string>
 
     <string name="action_connect">Connect</string>
     <string name="action_disconnect">Disconnect</string>
@@ -17,11 +22,11 @@
     <string name="label_entitlement">Entitlement</string>
 
     <string name="dialog_voucher_title">Enter voucher code</string>
-    <string name="dialog_voucher_hint">TVPN-XXXX-XXXX-XXXX</string>
+    <string name="dialog_voucher_hint">Paste or type your code</string>
     <string name="dialog_voucher_cancel">Cancel</string>
     <string name="dialog_voucher_submit">Activate</string>
 
-    <string name="error_empty_voucher">Please enter a voucher code.</string>
+    <string name="error_empty_voucher">Enter the full 12-character code.</string>
     <string name="error_voucher_not_found">Voucher not found. Check the code and try again.</string>
     <string name="error_voucher_expired">Voucher expired. Get a new one from the TreasureTrail app.</string>
     <string name="error_voucher_used">Voucher already used. Request a new one.</string>
