@@ -1,3 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">TTVPN™</string>
+
+    <string name="state_disconnected">DISCONNECTED</string>
+    <string name="state_connecting">CONNECTING…</string>
+    <string name="state_connected">CONNECTED</string>
+    <string name="state_not_setup">NOT SET UP</string>
+
+    <string name="action_connect">Connect</string>
+    <string name="action_disconnect">Disconnect</string>
+    <string name="action_enter_voucher">Enter voucher</string>
+    <string name="action_change_voucher">Change voucher</string>
+
+    <string name="label_endpoint">Endpoint</string>
+    <string name="label_duration">Duration</string>
+    <string name="label_entitlement">Entitlement</string>
+
+    <string name="dialog_voucher_title">Enter voucher code</string>
+    <string name="dialog_voucher_hint">TVPN-XXXX-XXXX-XXXX</string>
+    <string name="dialog_voucher_cancel">Cancel</string>
+    <string name="dialog_voucher_submit">Activate</string>
+
+    <string name="error_empty_voucher">Please enter a voucher code.</string>
+    <string name="error_voucher_not_found">Voucher not found. Check the code and try again.</string>
+    <string name="error_voucher_expired">Voucher expired. Get a new one from the TreasureTrail app.</string>
+    <string name="error_voucher_used">Voucher already used. Request a new one.</string>
+    <string name="error_subscription_inactive">Your subscription is not active.</string>
+    <string name="error_user_not_found">Account not found.</string>
+    <string name="error_network">Could not reach server. Try again.</string>
+    <string name="error_unknown">Something went wrong. Try again.</string>
+
+    <string name="entitlement_active">Active</string>
+    <string name="entitlement_expires">Expires %1$s</string>
+    <string name="duration_placeholder">--:--</string>
 </resources>

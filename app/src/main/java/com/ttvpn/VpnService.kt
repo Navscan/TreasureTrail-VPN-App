@@ -10,17 +10,11 @@ import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.wireguard.android.backend.GoBackend
 import com.wireguard.android.backend.Tunnel
-import com.wireguard.config.Config
 import java.io.ByteArrayInputStream
 
 class VpnService : GoBackend.VpnService() {
     private lateinit var backend: GoBackend
     private var currentTunnel: Tunnel? = null
-
-    companion object {
-        @Volatile
-        var isRunning = false
-    }
 
     override fun onCreate() {
         super.onCreate()
@@ -41,34 +35,36 @@ class VpnService : GoBackend.VpnService() {
     }
 
     private fun startVpn() {
-        try {
-            val configString = """
-[Interface]
-PrivateKey = YEN/1f7rjenidQPCIj5CbudBs2c/xRmw81LWl0CIO24=
-Address = 10.0.0.3/24
-DNS = 1.1.1.1
+        val configString = ConfigStore.getConfig(this)
+        if (configString.isNullOrEmpty()) {
+            stopSelf()
+            return
+        }
 
-[Peer]
-PublicKey = 8bL+3Y2M1uaERIWMp/g2+Xk7246cvJX22qKNzSiejHQ=
-Endpoint = 154.66.198.207:51820
-AllowedIPs = 0.0.0.0/0
-PersistentKeepalive = 25
-            """.trimIndent()
-            val config = Config.parse(ByteArrayInputStream(configString.toByteArray()))
+        try {
+            val parsed = com.wireguard.config.Config.parse(
+                ByteArrayInputStream(configString.toByteArray())
+            )
             val tunnel = object : Tunnel {
-                override fun getName(): String = "TTVPN"
+                override fun getName(): String = Config.TUNNEL_NAME
                 override fun onStateChange(state: Tunnel.State) {
-                    isRunning = (state == Tunnel.State.UP)
+                    val up = (state == Tunnel.State.UP)
+                    ConfigStore.setVpnRunning(this@VpnService, up)
+                    if (up) {
+                        ConfigStore.setTunnelStartedAt(this@VpnService, System.currentTimeMillis())
+                    }
                 }
             }
             currentTunnel = tunnel
+
             try {
-                showNotification("TTVPN™", "Protected by PayBridge (Pty) Ltd")
+                showNotification()
             } catch (_: Exception) {
             }
-            backend.setState(tunnel, Tunnel.State.UP, config)
+
+            backend.setState(tunnel, Tunnel.State.UP, parsed)
         } catch (e: Exception) {
-            isRunning = false
+            ConfigStore.setVpnRunning(this, false)
             currentTunnel = null
             stopVpn()
         }
@@ -79,29 +75,41 @@ PersistentKeepalive = 25
             currentTunnel?.let { backend.setState(it, Tunnel.State.DOWN, null) }
         } catch (_: Exception) {
         }
-        isRunning = false
+        ConfigStore.setVpnRunning(this, false)
         currentTunnel = null
         stopForeground(true)
         stopSelf()
     }
 
-    private fun showNotification(title: String, content: String) {
+    private fun showNotification() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel("vpn", "VPN Status", NotificationManager.IMPORTANCE_LOW)
-            getSystemService(NotificationManager::class.java).createNotificationChannel(channel)
+            val channel = NotificationChannel(
+                Config.NOTIFICATION_CHANNEL_ID,
+                "VPN Status",
+                NotificationManager.IMPORTANCE_LOW
+            )
+            getSystemService(NotificationManager::class.java)
+                .createNotificationChannel(channel)
         }
         val intent = Intent(this, MainActivity::class.java)
-        val pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE)
-        val notification = NotificationCompat.Builder(this, "vpn")
-            .setContentTitle(title)
-            .setContentText(content)
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent, PendingIntent.FLAG_IMMUTABLE
+        )
+        val notification = NotificationCompat.Builder(this, Config.NOTIFICATION_CHANNEL_ID)
+            .setContentTitle("TTVPN™")
+            .setContentText("Protected by PayBridge (Pty) Ltd")
             .setSmallIcon(android.R.drawable.ic_lock_lock)
             .setContentIntent(pendingIntent)
             .build()
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(1, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+            startForeground(
+                Config.NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
         } else {
-            startForeground(1, notification)
+            startForeground(Config.NOTIFICATION_ID, notification)
         }
     }
 }
