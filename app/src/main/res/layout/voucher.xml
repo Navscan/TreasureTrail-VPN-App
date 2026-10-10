@@ -14,25 +14,86 @@
         android:textSize="20sp"
         android:textStyle="bold" />
 
-    <EditText
-        android:id="@+id/editVoucher"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:autofillHints=""
-        android:hint="@string/dialog_voucher_hint"
-        android:imeOptions="actionDone"
-        android:inputType="text"
-        android:maxLines="1"
-        android:textColor="@color/text_main"
-        android:textColorHint="@color/muted_label"
-        android:textSize="16sp" />
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="28dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginEnd="10dp"
+            android:letterSpacing="0.08"
+            android:text="TVPN-"
+            android:textColor="@color/brand_gold"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/editSeg1"
+            android:layout_width="68dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:inputType="textCapCharacters"
+            android:letterSpacing="0.12"
+            android:maxLength="4"
+            android:textColor="@color/text_main"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:text="-"
+            android:textColor="@color/brand_gold"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/editSeg2"
+            android:layout_width="68dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:inputType="textCapCharacters"
+            android:letterSpacing="0.12"
+            android:maxLength="4"
+            android:textColor="@color/text_main"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:text="-"
+            android:textColor="@color/brand_gold"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+
+        <EditText
+            android:id="@+id/editSeg3"
+            android:layout_width="68dp"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:inputType="textCapCharacters"
+            android:letterSpacing="0.12"
+            android:maxLength="4"
+            android:textColor="@color/text_main"
+            android:textSize="22sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/txtError"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
+        android:layout_marginTop="12dp"
         android:textColor="@color/state_red"
         android:textSize="13sp"
         android:visibility="gone" />
@@ -40,7 +101,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="20dp"
+        android:layout_marginTop="24dp"
         android:orientation="horizontal">
 
         <Button
@@ -48,7 +109,9 @@
             android:layout_width="0dp"
             android:layout_height="48dp"
             android:layout_weight="1"
-            android:text="@string/dialog_voucher_cancel" />
+            android:backgroundTint="@color/bg_dark"
+            android:text="@string/dialog_voucher_cancel"
+            android:textColor="@color/text_main" />
 
         <Button
             android:id="@+id/btnSubmit"
@@ -56,6 +119,9 @@
             android:layout_height="48dp"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:text="@string/dialog_voucher_submit" />
+            android:backgroundTint="@color/brand_gold"
+            android:text="@string/dialog_voucher_submit"
+            android:textColor="@color/bg_dark"
+            android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>
