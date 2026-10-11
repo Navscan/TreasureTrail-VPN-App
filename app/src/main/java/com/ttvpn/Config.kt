@@ -14,12 +14,14 @@ object Config {
 
     const val PREFS_NAME = "ttvpn_prefs"
     const val PREF_WG_CONFIG = "wg_config"
+    const val PREF_WG_CONFIG_ORIGINAL = "wg_config_original"
     const val PREF_ASSIGNED_IP = "assigned_ip"
     const val PREF_CONFIGURED_AT = "configured_at"
     const val PREF_SUBSCRIPTION_EXPIRES = "subscription_expires"
     const val PREF_VPN_RUNNING = "vpn_running"
     const val PREF_TUNNEL_STARTED_AT = "tunnel_started_at"
     const val PREF_LOCK_ENABLED = "lock_enabled"
+    const val PREF_CUSTOM_DNS = "custom_dns"
 
     const val TUNNEL_NAME = "TTVPN"
     const val NOTIFICATION_CHANNEL_ID = "vpn"
@@ -28,4 +30,5 @@ object Config {
     const val STATE_POLL_INTERVAL_MS = 1_000L
     const val STATS_POLL_INTERVAL_MS = 1_000L
     const val RECONNECT_DELAY_MS = 1_500L
+    const val DNS_RESTART_DELAY_MS = 800L
 }

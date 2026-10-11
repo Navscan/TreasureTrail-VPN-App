@@ -12,12 +12,15 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.text.Editable
+import android.text.InputType
 import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -86,6 +89,13 @@ class MainActivity : AppCompatActivity() {
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnExit.setOnClickListener { onExitTapped() }
+
+        cardMeta.setOnLongClickListener {
+            if (ConfigStore.hasConfig(this)) {
+                showDnsDialog()
+            }
+            true
+        }
 
         checkLock.setOnCheckedChangeListener { _, isChecked ->
             if (suppressLockChange) return@setOnCheckedChangeListener
@@ -186,6 +196,78 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.dialog_locked_ok, null)
             .show()
     }
+
+    // -------- custom DNS --------
+
+    private fun showDnsDialog() {
+        val density = resources.displayMetrics.density
+        val pad = (24 * density).toInt()
+
+        val container = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(pad, pad / 2, pad, 0)
+        }
+
+        val label = TextView(this).apply {
+            text = getString(R.string.dialog_dns_label)
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_main))
+            textSize = 14f
+        }
+
+        val input = EditText(this).apply {
+            hint = getString(R.string.dialog_dns_placeholder)
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
+            setText(ConfigStore.getCustomDns(this@MainActivity) ?: "")
+            setSelection(text.length)
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_main))
+            setHintTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+            textSize = 16f
+        }
+
+        val hint = TextView(this).apply {
+            text = getString(R.string.dialog_dns_hint)
+            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+            textSize = 12f
+            setPadding(0, pad / 2, 0, 0)
+        }
+
+        container.addView(label)
+        container.addView(input)
+        container.addView(hint)
+
+        AlertDialog.Builder(this)
+            .setTitle(R.string.dialog_dns_title)
+            .setView(container)
+            .setPositiveButton(R.string.dialog_dns_save) { _, _ ->
+                val value = input.text.toString().trim()
+                applyDns(value.ifBlank { null })
+            }
+            .setNeutralButton(R.string.dialog_dns_reset) { _, _ ->
+                applyDns(null)
+            }
+            .setNegativeButton(R.string.dialog_dns_cancel, null)
+            .show()
+    }
+
+    private fun applyDns(dns: String?) {
+        val wasRunning = ConfigStore.isVpnRunning(this)
+
+        if (!ConfigStore.setCustomDns(this, dns)) {
+            return
+        }
+
+        if (wasRunning) {
+            VpnService.stop(this)
+            handler.postDelayed({
+                pendingStart = true
+                requestConsentThenStart()
+            }, Config.DNS_RESTART_DELAY_MS)
+        }
+
+        refreshUi()
+    }
+
+    // -------- voucher --------
 
     private fun showVoucherDialog(prefill: String?) {
         val view = LayoutInflater.from(this).inflate(R.layout.voucher, null)
@@ -343,12 +425,15 @@ class MainActivity : AppCompatActivity() {
         val running = ConfigStore.isVpnRunning(this)
         val connecting = pendingStart && !running
         val lockOn = ConfigStore.isLockEnabled(this)
+        val customDns = ConfigStore.getCustomDns(this)
 
         suppressLockChange = true
         checkLock.isChecked = lockOn
         suppressLockChange = false
 
         val lockPrefix = if (lockOn) getString(R.string.lock_prefix) else ""
+        val dnsSuffix = if (!customDns.isNullOrBlank())
+            getString(R.string.substate_dns_suffix, customDns) else ""
 
         when {
             !hasConfig -> {
@@ -364,7 +449,7 @@ class MainActivity : AppCompatActivity() {
             connecting -> {
                 applyState(
                     text = getString(R.string.state_connecting),
-                    subtext = lockPrefix + getString(R.string.substate_connecting),
+                    subtext = lockPrefix + getString(R.string.substate_connecting) + dnsSuffix,
                     wordColour = R.color.state_amber,
                     dotColour = R.color.state_amber,
                     buttonText = getString(R.string.action_disconnect)
@@ -385,7 +470,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     applyState(
                         text = getString(R.string.state_secured),
-                        subtext = lockPrefix + sub,
+                        subtext = lockPrefix + sub + dnsSuffix,
                         wordColour = R.color.brand_gold,
                         dotColour = R.color.state_green,
                         buttonText = getString(R.string.action_disconnect)
@@ -393,7 +478,7 @@ class MainActivity : AppCompatActivity() {
                 } else {
                     applyState(
                         text = getString(R.string.state_standing_by),
-                        subtext = lockPrefix + getString(R.string.substate_standing_by),
+                        subtext = lockPrefix + getString(R.string.substate_standing_by) + dnsSuffix,
                         wordColour = R.color.state_amber,
                         dotColour = R.color.state_amber,
                         buttonText = getString(R.string.action_disconnect)
@@ -405,7 +490,7 @@ class MainActivity : AppCompatActivity() {
             else -> {
                 applyState(
                     text = getString(R.string.state_disconnected),
-                    subtext = lockPrefix + getString(R.string.substate_disconnected),
+                    subtext = lockPrefix + getString(R.string.substate_disconnected) + dnsSuffix,
                     wordColour = R.color.muted_label,
                     dotColour = R.color.state_red,
                     buttonText = getString(R.string.action_connect)

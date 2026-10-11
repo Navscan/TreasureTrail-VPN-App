@@ -16,6 +16,7 @@
     <string name="substate_secured_ethernet">Secured · Ethernet</string>
     <string name="substate_secured_other">Secured</string>
     <string name="substate_standing_by">Tunnel open · No network</string>
+    <string name="substate_dns_suffix"> · DNS %1$s</string>
 
     <string name="lock_prefix">🔒 </string>
 
@@ -39,6 +40,14 @@
     <string name="dialog_locked_title">VPN is locked on</string>
     <string name="dialog_locked_message">Untick "Lock VPN on" to disconnect. The tunnel will keep running while the lock is active.</string>
     <string name="dialog_locked_ok">OK</string>
+
+    <string name="dialog_dns_title">Custom DNS</string>
+    <string name="dialog_dns_label">DNS server</string>
+    <string name="dialog_dns_placeholder">e.g. 9.9.9.9</string>
+    <string name="dialog_dns_hint">IP address only. Hostnames are not supported by the WireGuard client. Leave empty to use the server default.</string>
+    <string name="dialog_dns_save">Save</string>
+    <string name="dialog_dns_reset">Reset</string>
+    <string name="dialog_dns_cancel">Cancel</string>
 
     <string name="error_empty_voucher">Enter the full 12-character code.</string>
     <string name="error_voucher_not_found">Voucher not found. Check the code and try again.</string>
