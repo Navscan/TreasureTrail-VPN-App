@@ -49,12 +49,6 @@
                 android:textSize="14sp"
                 android:textStyle="italic" />
         </LinearLayout>
-
-        <View
-            android:id="@+id/dotStatus"
-            android:layout_width="8dp"
-            android:layout_height="8dp"
-            android:background="@drawable/bg_dot" />
     </LinearLayout>
 
     <View
@@ -74,10 +68,60 @@
             android:orientation="vertical"
             android:padding="12dp">
 
+            <!-- State panel: always visible -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                app:cardBackgroundColor="@color/panel_bg"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeColor="@color/border_outer"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="12dp">
+
+                    <View
+                        android:id="@+id/dotStatus"
+                        android:layout_width="8dp"
+                        android:layout_height="8dp"
+                        android:background="@drawable/bg_dot" />
+
+                    <TextView
+                        android:id="@+id/txtState"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:letterSpacing="0.06"
+                        android:text="@string/state_not_setup"
+                        android:textColor="@color/muted_label"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtSubstate"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:text="@string/substate_not_setup"
+                        android:textColor="@color/muted_label"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Meta panel: config-dependent -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardMeta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
                 android:visibility="gone"
                 app:cardBackgroundColor="@color/panel_bg"
                 app:cardCornerRadius="12dp"
@@ -91,49 +135,13 @@
                     android:orientation="vertical"
                     android:padding="12dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:text="● "
-                            android:textColor="@color/brand_teal"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/txtState"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:letterSpacing="0.06"
-                            android:text="@string/state_not_setup"
-                            android:textColor="@color/muted_label"
-                            android:textSize="13sp"
-                            android:textStyle="bold" />
-
-                        <TextView
-                            android:id="@+id/txtSubstate"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:text="@string/substate_not_setup"
-                            android:textColor="@color/muted_label"
-                            android:textSize="11sp" />
-                    </LinearLayout>
-
                     <View
                         android:layout_width="match_parent"
                         android:layout_height="1dp"
-                        android:layout_marginTop="8dp"
                         android:layout_marginBottom="4dp"
                         android:background="@color/border_inner" />
 
+                    <!-- Endpoint -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -166,6 +174,7 @@
                         android:layout_height="1dp"
                         android:background="@color/border_inner" />
 
+                    <!-- Duration -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -199,6 +208,7 @@
                         android:layout_height="1dp"
                         android:background="@color/border_inner" />
 
+                    <!-- Data -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -232,6 +242,7 @@
                         android:layout_height="1dp"
                         android:background="@color/border_inner" />
 
+                    <!-- Entitlement -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -262,6 +273,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Action panel -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -338,7 +350,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:text="v1.2 ©PayBridge(Pty) Ltd 2026"
+                android:text="v1.3 ©PayBridge(Pty) Ltd 2026"
                 android:textColor="@color/muted_label"
                 android:textSize="10sp" />
         </LinearLayout>
