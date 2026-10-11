@@ -11,8 +11,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/dialog_voucher_title"
-        android:textColor="@color/text_main"
-        android:textSize="20sp"
+        android:textColor="@color/brand_gold"
+        android:textSize="14sp"
         android:textStyle="bold" />
 
     <TextView
@@ -21,7 +21,7 @@
         android:layout_marginTop="6dp"
         android:text="@string/dialog_voucher_hint"
         android:textColor="@color/muted_label"
-        android:textSize="13sp" />
+        android:textSize="11sp" />
 
     <EditText
         android:id="@+id/editVoucher"
@@ -38,7 +38,7 @@
         android:maxLines="1"
         android:textColor="@color/text_main"
         android:textColorHint="@color/muted_label"
-        android:textSize="18sp" />
+        android:textSize="12sp" />
 
     <TextView
         android:id="@+id/txtError"
@@ -46,7 +46,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="10dp"
         android:textColor="@color/state_red"
-        android:textSize="13sp"
+        android:textSize="11sp"
         android:visibility="gone" />
 
     <LinearLayout
@@ -57,25 +57,19 @@
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnCancel"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            style="@style/Widget.TTVPN.Button.Outlined"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="40dp"
             android:layout_weight="1"
-            android:text="@string/dialog_voucher_cancel"
-            android:textColor="@color/muted_label"
-            app:cornerRadius="10dp"
-            app:strokeColor="@color/muted_label" />
+            android:text="@string/dialog_voucher_cancel" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnSubmit"
+            style="@style/Widget.TTVPN.Button.Primary"
             android:layout_width="0dp"
-            android:layout_height="48dp"
+            android:layout_height="40dp"
             android:layout_marginStart="12dp"
             android:layout_weight="1"
-            android:backgroundTint="@color/brand_gold"
-            android:text="@string/dialog_voucher_submit"
-            android:textColor="@color/bg_dark"
-            android:textStyle="bold"
-            app:cornerRadius="10dp" />
+            android:text="@string/dialog_voucher_submit" />
     </LinearLayout>
 </LinearLayout>

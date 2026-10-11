@@ -7,10 +7,46 @@
     </style>
 
     <style name="ThemeOverlay.TTVPN.Dialog" parent="ThemeOverlay.MaterialComponents.MaterialAlertDialog">
-        <item name="colorSurface">@color/card_surface</item>
+        <item name="colorSurface">@color/panel_bg</item>
         <item name="colorOnSurface">@color/text_main</item>
         <item name="colorPrimary">@color/brand_gold</item>
         <item name="colorOnPrimary">@color/bg_dark</item>
+    </style>
+
+    <style name="Widget.TTVPN.Button.Primary" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/brand_gold</item>
+        <item name="android:textColor">@color/bg_dark</item>
+        <item name="cornerRadius">4dp</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:minHeight">40dp</item>
+    </style>
+
+    <style name="Widget.TTVPN.Button.Outlined" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="strokeColor">@color/brand_gold</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="android:textColor">@color/brand_gold</item>
+        <item name="cornerRadius">4dp</item>
+        <item name="android:textSize">11sp</item>
+        <item name="android:minHeight">40dp</item>
+    </style>
+
+    <style name="TextAppearance.TTVPN.Label" parent="TextAppearance.MaterialComponents.Caption">
+        <item name="android:textSize">10sp</item>
+        <item name="android:letterSpacing">0.08</item>
+        <item name="android:textColor">@color/muted_label</item>
+    </style>
+
+    <style name="TextAppearance.TTVPN.Value" parent="TextAppearance.MaterialComponents.Body2">
+        <item name="android:textSize">12sp</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textColor">@color/text_main</item>
+    </style>
+
+    <style name="TextAppearance.TTVPN.StateWord" parent="TextAppearance.MaterialComponents.Subtitle1">
+        <item name="android:textSize">13sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:letterSpacing">0.06</item>
     </style>
 
 </resources>
