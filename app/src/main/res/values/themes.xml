@@ -11,6 +11,9 @@
         <item name="colorOnSurface">@color/text_main</item>
         <item name="colorPrimary">@color/brand_gold</item>
         <item name="colorOnPrimary">@color/bg_dark</item>
+        <item name="android:windowBackground">@drawable/bg_dialog_console</item>
+        <item name="android:textColorPrimary">@color/text_main</item>
+        <item name="android:textColorSecondary">@color/muted_label</item>
     </style>
 
     <style name="Widget.TTVPN.Button.Primary" parent="Widget.MaterialComponents.Button">

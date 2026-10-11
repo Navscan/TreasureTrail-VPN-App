@@ -42,6 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtDuration: TextView
     private lateinit var txtData: TextView
     private lateinit var txtEntitlement: TextView
+    private lateinit var txtFooterVersion: TextView
 
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
@@ -86,6 +87,7 @@ class MainActivity : AppCompatActivity() {
         txtDuration = findViewById(R.id.txtDuration)
         txtData = findViewById(R.id.txtData)
         txtEntitlement = findViewById(R.id.txtEntitlement)
+        txtFooterVersion = findViewById(R.id.txtFooterVersion)
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnExit.setOnClickListener { onExitTapped() }
@@ -109,6 +111,7 @@ class MainActivity : AppCompatActivity() {
 
         requestNotificationPermissionIfNeeded()
         refreshUi()
+        txtFooterVersion.text = "v" + BuildConfig.VERSION_NAME + " ©PayBridge(Pty) Ltd 2026"
         handleIntent(intent)
     }
 

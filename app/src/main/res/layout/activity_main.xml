@@ -74,7 +74,6 @@
             android:orientation="vertical"
             android:padding="12dp">
 
-            <!-- Panel 1: state + session metadata -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/cardMeta"
                 android:layout_width="match_parent"
@@ -92,7 +91,6 @@
                     android:orientation="vertical"
                     android:padding="12dp">
 
-                    <!-- State row -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -136,7 +134,6 @@
                         android:layout_marginBottom="4dp"
                         android:background="@color/border_inner" />
 
-                    <!-- Endpoint -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -169,7 +166,6 @@
                         android:layout_height="1dp"
                         android:background="@color/border_inner" />
 
-                    <!-- Duration -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -203,7 +199,6 @@
                         android:layout_height="1dp"
                         android:background="@color/border_inner" />
 
-                    <!-- Data -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -237,7 +232,6 @@
                         android:layout_height="1dp"
                         android:background="@color/border_inner" />
 
-                    <!-- Entitlement -->
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
@@ -268,7 +262,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Panel 2: actions -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -309,7 +302,6 @@
         </LinearLayout>
     </ScrollView>
 
-    <!-- Footer -->
     <View
         android:layout_width="match_parent"
         android:layout_height="2dp"
@@ -326,13 +318,30 @@
         android:paddingTop="8dp"
         android:paddingBottom="8dp">
 
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="🐞 TTvpn v1.1"
-            android:textColor="@color/muted_label"
-            android:textSize="10sp" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="TTvpn"
+                android:textColor="@color/brand_gold"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtFooterVersion"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="v1.2 ©PayBridge(Pty) Ltd 2026"
+                android:textColor="@color/muted_label"
+                android:textSize="10sp" />
+        </LinearLayout>
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExit"
