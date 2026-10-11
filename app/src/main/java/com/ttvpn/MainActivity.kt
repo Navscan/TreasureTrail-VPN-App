@@ -94,6 +94,7 @@ class MainActivity : AppCompatActivity() {
                 pendingStart = true
                 requestConsentThenStart()
             }
+            refreshUi()
         }
 
         requestNotificationPermissionIfNeeded()
@@ -174,9 +175,6 @@ class MainActivity : AppCompatActivity() {
         VpnService.stop(this)
     }
 
-    // Exit closes the app. It does NOT stop the VPN service. The tunnel
-    // keeps running in the background, the foreground notification stays
-    // in the status bar, and tapping that notification reopens the app.
     private fun onExitTapped() {
         finishAndRemoveTask()
     }
@@ -344,11 +342,13 @@ class MainActivity : AppCompatActivity() {
         val hasConfig = ConfigStore.hasConfig(this)
         val running = ConfigStore.isVpnRunning(this)
         val connecting = pendingStart && !running
+        val lockOn = ConfigStore.isLockEnabled(this)
 
-        // Keep the lock checkbox in sync without firing the listener.
         suppressLockChange = true
-        checkLock.isChecked = ConfigStore.isLockEnabled(this)
+        checkLock.isChecked = lockOn
         suppressLockChange = false
+
+        val lockPrefix = if (lockOn) getString(R.string.lock_prefix) else ""
 
         when {
             !hasConfig -> {
@@ -364,7 +364,7 @@ class MainActivity : AppCompatActivity() {
             connecting -> {
                 applyState(
                     text = getString(R.string.state_connecting),
-                    subtext = getString(R.string.substate_connecting),
+                    subtext = lockPrefix + getString(R.string.substate_connecting),
                     wordColour = R.color.state_amber,
                     dotColour = R.color.state_amber,
                     buttonText = getString(R.string.action_disconnect)
@@ -373,20 +373,39 @@ class MainActivity : AppCompatActivity() {
                 updateMeta(running = false)
             }
             running -> {
-                applyState(
-                    text = getString(R.string.state_connected),
-                    subtext = getString(R.string.substate_connected),
-                    wordColour = R.color.brand_gold,
-                    dotColour = R.color.state_green,
-                    buttonText = getString(R.string.action_disconnect)
-                )
+                val networkType = Stats.networkType
+                val networkPresent = networkType != "NONE"
+
+                if (networkPresent) {
+                    val sub = when (networkType) {
+                        "WIFI" -> getString(R.string.substate_secured_wifi)
+                        "CELLULAR" -> getString(R.string.substate_secured_cellular)
+                        "ETHERNET" -> getString(R.string.substate_secured_ethernet)
+                        else -> getString(R.string.substate_secured_other)
+                    }
+                    applyState(
+                        text = getString(R.string.state_secured),
+                        subtext = lockPrefix + sub,
+                        wordColour = R.color.brand_gold,
+                        dotColour = R.color.state_green,
+                        buttonText = getString(R.string.action_disconnect)
+                    )
+                } else {
+                    applyState(
+                        text = getString(R.string.state_standing_by),
+                        subtext = lockPrefix + getString(R.string.substate_standing_by),
+                        wordColour = R.color.state_amber,
+                        dotColour = R.color.state_amber,
+                        buttonText = getString(R.string.action_disconnect)
+                    )
+                }
                 cardMeta.visibility = View.VISIBLE
                 updateMeta(running = true)
             }
             else -> {
                 applyState(
                     text = getString(R.string.state_disconnected),
-                    subtext = getString(R.string.substate_disconnected),
+                    subtext = lockPrefix + getString(R.string.substate_disconnected),
                     wordColour = R.color.muted_label,
                     dotColour = R.color.state_red,
                     buttonText = getString(R.string.action_connect)

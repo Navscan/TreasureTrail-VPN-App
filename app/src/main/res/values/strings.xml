@@ -4,13 +4,20 @@
 
     <string name="state_disconnected">DISCONNECTED</string>
     <string name="state_connecting">CONNECTING</string>
-    <string name="state_connected">CONNECTED</string>
+    <string name="state_secured">SECURED</string>
+    <string name="state_standing_by">STANDING BY</string>
     <string name="state_not_setup">NOT SET UP</string>
 
     <string name="substate_not_setup">Enter a voucher to get started</string>
     <string name="substate_disconnected">Tap connect to start your tunnel</string>
     <string name="substate_connecting">Establishing secure tunnel…</string>
-    <string name="substate_connected">Your traffic is encrypted</string>
+    <string name="substate_secured_wifi">Secured · WiFi</string>
+    <string name="substate_secured_cellular">Secured · Cellular</string>
+    <string name="substate_secured_ethernet">Secured · Ethernet</string>
+    <string name="substate_secured_other">Secured</string>
+    <string name="substate_standing_by">Tunnel open · No network</string>
+
+    <string name="lock_prefix">🔒 </string>
 
     <string name="action_connect">Connect</string>
     <string name="action_disconnect">Disconnect</string>

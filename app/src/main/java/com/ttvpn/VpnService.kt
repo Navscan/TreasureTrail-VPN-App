@@ -9,6 +9,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.net.ConnectivityManager
 import android.net.Network
+import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
@@ -33,6 +34,7 @@ class VpnService : GoBackend.VpnService() {
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
+            refreshNetworkType()
             if (ConfigStore.isLockEnabled(this@VpnService) && currentTunnel == null) {
                 mainHandler.postDelayed({
                     if (currentTunnel == null && ConfigStore.isLockEnabled(this@VpnService)) {
@@ -40,6 +42,17 @@ class VpnService : GoBackend.VpnService() {
                     }
                 }, Config.RECONNECT_DELAY_MS)
             }
+        }
+
+        override fun onLost(network: Network) {
+            refreshNetworkType()
+        }
+
+        override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+        ) {
+            refreshNetworkType()
         }
     }
 
@@ -68,6 +81,7 @@ class VpnService : GoBackend.VpnService() {
         super.onCreate()
         backend = GoBackend(this)
         registerNetworkCallback()
+        refreshNetworkType()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -107,6 +121,23 @@ class VpnService : GoBackend.VpnService() {
             val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             cm.unregisterNetworkCallback(networkCallback)
         } catch (_: Exception) {
+        }
+    }
+
+    private fun refreshNetworkType() {
+        try {
+            val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val active = cm.activeNetwork
+            val caps = active?.let { cm.getNetworkCapabilities(it) }
+            Stats.networkType = when {
+                caps == null -> "NONE"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WIFI"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
+                else -> "OTHER"
+            }
+        } catch (_: Exception) {
+            Stats.networkType = "NONE"
         }
     }
 
