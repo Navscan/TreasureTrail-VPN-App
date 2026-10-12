@@ -44,4 +44,9 @@ object Config {
     const val UPDATER_SUBDIR = "updates"
     const val UPDATER_APK_NAME = "TTVPN.apk"
     const val UPDATER_FILEPROVIDER_AUTHORITY = "com.ttvpn.fileprovider"
+
+    // -------- in-app event log --------
+    const val PREF_LOG_ENABLED = "log_enabled"
+    const val PREF_EVENT_LOG = "event_log"
+    const val LOG_MAX_ENTRIES = 200
 }

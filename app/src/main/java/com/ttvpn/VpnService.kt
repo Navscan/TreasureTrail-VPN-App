@@ -25,6 +25,9 @@ class VpnService : GoBackend.VpnService() {
     private val statsHandler = Handler(Looper.getMainLooper())
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    @Volatile
+    private var lastNetworkType: String = ""
+
     private val statsRunnable = object : Runnable {
         override fun run() {
             updateStats()
@@ -80,6 +83,7 @@ class VpnService : GoBackend.VpnService() {
     override fun onCreate() {
         super.onCreate()
         backend = GoBackend(this)
+        EventLog.init(this)
         registerNetworkCallback()
         refreshNetworkType()
     }
@@ -93,6 +97,7 @@ class VpnService : GoBackend.VpnService() {
                 return START_NOT_STICKY
             }
             ACTION_START, null -> {
+                EventLog.write(this, "EVENT", "Service started")
                 if (currentTunnel == null) {
                     startVpn()
                 }
@@ -105,6 +110,7 @@ class VpnService : GoBackend.VpnService() {
     override fun onDestroy() {
         unregisterNetworkCallback()
         stopVpn()
+        EventLog.write(this, "EVENT", "Service stopped")
         super.onDestroy()
     }
 
@@ -129,13 +135,19 @@ class VpnService : GoBackend.VpnService() {
             val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val active = cm.activeNetwork
             val caps = active?.let { cm.getNetworkCapabilities(it) }
-            Stats.networkType = when {
+            val newType = when {
                 caps == null -> "NONE"
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WIFI"
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "CELLULAR"
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> "ETHERNET"
                 else -> "OTHER"
             }
+            val previous = lastNetworkType
+            if (previous.isNotEmpty() && previous != newType) {
+                EventLog.write(this, "INFO", "Network: $previous → $newType")
+            }
+            lastNetworkType = newType
+            Stats.networkType = newType
         } catch (_: Exception) {
             Stats.networkType = "NONE"
         }
@@ -159,6 +171,9 @@ class VpnService : GoBackend.VpnService() {
                     ConfigStore.setVpnRunning(this@VpnService, up)
                     if (up) {
                         ConfigStore.setTunnelStartedAt(this@VpnService, System.currentTimeMillis())
+                        EventLog.write(this@VpnService, "OK", "SECURED")
+                    } else {
+                        EventLog.write(this@VpnService, "EVENT", "DISCONNECTED")
                     }
                 }
             }
@@ -169,9 +184,11 @@ class VpnService : GoBackend.VpnService() {
             } catch (_: Exception) {
             }
 
+            EventLog.write(this, "EVENT", "CONNECTING")
             backend.setState(tunnel, Tunnel.State.UP, parsed)
             startStatsPolling()
         } catch (e: Exception) {
+            EventLog.write(this, "ERR", "Tunnel start failed  ${e.message ?: "unknown"}")
             ConfigStore.setVpnRunning(this, false)
             currentTunnel = null
             stopVpn()

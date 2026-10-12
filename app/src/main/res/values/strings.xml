@@ -27,6 +27,7 @@
     <string name="action_exit">Exit app</string>
     <string name="action_lock">Lock VPN on</string>
     <string name="action_update_ready">Update ready</string>
+    <string name="action_logs">LOGS</string>
 
     <string name="label_endpoint">Endpoint</string>
     <string name="label_duration">Duration</string>
@@ -49,6 +50,14 @@
     <string name="dialog_dns_save">Save</string>
     <string name="dialog_dns_reset">Reset</string>
     <string name="dialog_dns_cancel">Cancel</string>
+
+    <string name="dialog_logs_title">EVENTS</string>
+    <string name="dialog_logs_empty">(no events)</string>
+    <string name="dialog_logs_clear">CLEAR</string>
+    <string name="dialog_logs_close">CLOSE</string>
+    <string name="dialog_logs_keep">Keep log</string>
+    <string name="log_status_on">Logging: ON</string>
+    <string name="log_status_off">Logging: OFF</string>
 
     <string name="error_empty_voucher">Enter the full 12-character code.</string>
     <string name="error_voucher_not_found">Voucher not found. Check the code and try again.</string>

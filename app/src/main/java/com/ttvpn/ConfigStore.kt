@@ -133,4 +133,11 @@ object ConfigStore {
     fun clear(context: Context) {
         prefs(context).edit().clear().apply()
     }
+
+    fun setLogEnabled(context: Context, enabled: Boolean) {
+        prefs(context).edit().putBoolean(Config.PREF_LOG_ENABLED, enabled).apply()
+    }
+
+    fun isLogEnabled(context: Context): Boolean =
+        prefs(context).getBoolean(Config.PREF_LOG_ENABLED, true)
 }

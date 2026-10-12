@@ -23,6 +23,7 @@ import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.ScrollView
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -46,6 +47,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtEntitlement: TextView
     private lateinit var txtFooterVersion: TextView
     private lateinit var btnUpdateReady: TextView
+    private lateinit var btnLogs: TextView
+    private lateinit var txtFooterDot1: TextView
+    private lateinit var txtFooterDot2: TextView
 
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
@@ -58,8 +62,10 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == Activity.RESULT_OK) {
+            EventLog.write(this, "OK", "Consent granted")
             doStartVpnService()
         } else {
+            EventLog.write(this, "WARN", "Consent denied")
             pendingStart = false
         }
     }
@@ -72,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         ActivityResultContracts.StartActivityForResult()
     ) { _ ->
         if (hasInstallPermission()) {
+            EventLog.write(this, "EVENT", "Update install fired")
             Updater.installStagedUpdate(this)
         }
     }
@@ -100,10 +107,14 @@ class MainActivity : AppCompatActivity() {
         txtEntitlement = findViewById(R.id.txtEntitlement)
         txtFooterVersion = findViewById(R.id.txtFooterVersion)
         btnUpdateReady = findViewById(R.id.btnUpdateReady)
+        btnLogs = findViewById(R.id.btnLogs)
+        txtFooterDot1 = findViewById(R.id.txtFooterDot1)
+        txtFooterDot2 = findViewById(R.id.txtFooterDot2)
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnExit.setOnClickListener { onExitTapped() }
         btnUpdateReady.setOnClickListener { onUpdateReadyTapped() }
+        btnLogs.setOnClickListener { showLogsDialog() }
 
         cardMeta.setOnLongClickListener {
             if (ConfigStore.hasConfig(this)) {
@@ -115,6 +126,7 @@ class MainActivity : AppCompatActivity() {
         checkLock.setOnCheckedChangeListener { _, isChecked ->
             if (suppressLockChange) return@setOnCheckedChangeListener
             ConfigStore.setLockEnabled(this, isChecked)
+            EventLog.write(this, "EVENT", if (isChecked) "Lock toggled on" else "Lock toggled off")
             if (isChecked && ConfigStore.hasConfig(this) && !ConfigStore.isVpnRunning(this)) {
                 pendingStart = true
                 requestConsentThenStart()
@@ -124,6 +136,8 @@ class MainActivity : AppCompatActivity() {
 
         requestNotificationPermissionIfNeeded()
         cleanupAfterInstall()
+        EventLog.init(this)
+        EventLog.write(this, "EVENT", "App opened")
         refreshUi()
         txtFooterVersion.text = "v" + BuildConfig.VERSION_NAME + " ©PayBridge(Pty) Ltd 2026"
         handleIntent(intent)
@@ -153,6 +167,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun onUpdateReadyTapped() {
         if (hasInstallPermission()) {
+            EventLog.write(this, "EVENT", "Update install fired")
             Updater.installStagedUpdate(this)
         } else {
             try {
@@ -210,6 +225,75 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun showLogsDialog() {
+        val view = LayoutInflater.from(this).inflate(R.layout.dialog_logs, null)
+        val logsContainer = view.findViewById<LinearLayout>(R.id.logsContainer)
+        val logsScroll = view.findViewById<ScrollView>(R.id.logsScroll)
+        val txtLogStatus = view.findViewById<TextView>(R.id.txtLogStatus)
+        val btnLogsClear = view.findViewById<TextView>(R.id.btnLogsClear)
+        val btnLogsClose = view.findViewById<TextView>(R.id.btnLogsClose)
+        val checkKeepLog = view.findViewById<CheckBox>(R.id.checkKeepLog)
+
+        checkKeepLog.isChecked = ConfigStore.isLogEnabled(this)
+
+        fun updateStatus() {
+            txtLogStatus.text = getString(
+                if (ConfigStore.isLogEnabled(this)) R.string.log_status_on else R.string.log_status_off
+            )
+        }
+
+        fun render() {
+            logsContainer.removeAllViews()
+            val entries = EventLog.readAll(this)
+            if (entries.isEmpty()) {
+                val empty = TextView(this).apply {
+                    text = getString(R.string.dialog_logs_empty)
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+                    textSize = 11f
+                    setTypeface(typeface, android.graphics.Typeface.ITALIC)
+                }
+                logsContainer.addView(empty)
+            } else {
+                for (entry in entries) {
+                    val row = TextView(this).apply {
+                        text = "${entry.timestamp}  ${entry.tag}  ${entry.message}"
+                        textSize = 11f
+                        setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_dim))
+                        typeface = android.graphics.Typeface.MONOSPACE
+                        setPadding(0, 4, 0, 4)
+                    }
+                    logsContainer.addView(row)
+                }
+            }
+            logsScroll.post { logsScroll.fullScroll(View.FOCUS_DOWN) }
+        }
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(view)
+            .setCancelable(true)
+            .create()
+
+        btnLogsClear.setOnClickListener {
+            EventLog.clear(this)
+            render()
+        }
+        btnLogsClose.setOnClickListener { dialog.dismiss() }
+
+        checkKeepLog.setOnCheckedChangeListener { _, isChecked ->
+            ConfigStore.setLogEnabled(this, isChecked)
+            updateStatus()
+            EventLog.write(
+                this, "EVENT",
+                if (isChecked) "Logging enabled" else "Logging disabled"
+            )
+            render()
+        }
+
+        updateStatus()
+        render()
+        dialog.show()
+    }
+
     private fun handleIntent(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
         val data = intent.data ?: return
@@ -229,6 +313,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun onToggleTapped() {
         if (!ConfigStore.hasConfig(this)) {
+            EventLog.write(this, "EVENT", "Connect tapped")
             showVoucherDialog(null)
             return
         }
@@ -237,8 +322,10 @@ class MainActivity : AppCompatActivity() {
                 showLockedDialog()
                 return
             }
+            EventLog.write(this, "EVENT", "Disconnect tapped")
             stopVpnService()
         } else {
+            EventLog.write(this, "EVENT", "Connect tapped")
             pendingStart = true
             requestConsentThenStart()
         }
@@ -333,6 +420,11 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
+        EventLog.write(
+            this, "EVENT",
+            if (dns.isNullOrBlank()) "DNS reset" else "DNS set to $dns"
+        )
+
         if (wasRunning) {
             VpnService.stop(this)
             handler.postDelayed({
@@ -387,6 +479,8 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            EventLog.write(this, "EVENT", "Voucher submitted  ${EventLog.maskVoucher(code)}")
+
             btnSubmit.isEnabled = false
             btnCancel.isEnabled = false
             txtError.visibility = View.GONE
@@ -404,16 +498,19 @@ class MainActivity : AppCompatActivity() {
                                 result.assignedIp,
                                 result.subscriptionExpiresAt
                             )
+                            EventLog.write(this, "OK", "Voucher accepted")
                             dialog.dismiss()
                             pendingStart = true
                             requestConsentThenStart()
                             refreshUi()
                         }
                         is RegisterResult.Failure -> {
+                            EventLog.write(this, "ERR", "Voucher rejected  ${result.reason}")
                             txtError.text = reasonToMessage(result.reason)
                             txtError.visibility = View.VISIBLE
                         }
                         RegisterResult.NetworkError -> {
+                            EventLog.write(this, "ERR", "Voucher rejected  network")
                             txtError.text = getString(R.string.error_network)
                             txtError.visibility = View.VISIBLE
                         }
@@ -439,14 +536,17 @@ class MainActivity : AppCompatActivity() {
                             result.assignedIp,
                             result.subscriptionExpiresAt
                         )
+                        EventLog.write(this, "OK", "Voucher accepted")
                         pendingStart = true
                         requestConsentThenStart()
                         refreshUi()
                     }
                     is RegisterResult.Failure -> {
+                        EventLog.write(this, "ERR", "Voucher rejected  ${result.reason}")
                         showErrorDialog(reasonToMessage(result.reason))
                     }
                     RegisterResult.NetworkError -> {
+                        EventLog.write(this, "ERR", "Voucher rejected  network")
                         showErrorDialog(getString(R.string.error_network))
                     }
                 }
@@ -508,7 +608,10 @@ class MainActivity : AppCompatActivity() {
         checkLock.isChecked = lockOn
         suppressLockChange = false
 
-        btnUpdateReady.visibility = if (Updater.isUpdateStaged(this)) View.VISIBLE else View.GONE
+        val updateStaged = Updater.isUpdateStaged(this)
+        btnUpdateReady.visibility = if (updateStaged) View.VISIBLE else View.GONE
+        txtFooterDot1.visibility = if (updateStaged) View.VISIBLE else View.GONE
+        txtFooterDot2.visibility = View.VISIBLE
 
         val lockPrefix = if (lockOn) getString(R.string.lock_prefix) else ""
         val dnsSuffix = if (!customDns.isNullOrBlank())
