@@ -7,10 +7,12 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.text.Editable
 import android.text.InputType
 import android.text.TextWatcher
@@ -43,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtData: TextView
     private lateinit var txtEntitlement: TextView
     private lateinit var txtFooterVersion: TextView
+    private lateinit var btnUpdateReady: TextView
 
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
@@ -64,6 +67,14 @@ class MainActivity : AppCompatActivity() {
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { }
+
+    private val installPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { _ ->
+        if (hasInstallPermission()) {
+            Updater.installStagedUpdate(this)
+        }
+    }
 
     private val pollRunnable = object : Runnable {
         override fun run() {
@@ -88,9 +99,11 @@ class MainActivity : AppCompatActivity() {
         txtData = findViewById(R.id.txtData)
         txtEntitlement = findViewById(R.id.txtEntitlement)
         txtFooterVersion = findViewById(R.id.txtFooterVersion)
+        btnUpdateReady = findViewById(R.id.btnUpdateReady)
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnExit.setOnClickListener { onExitTapped() }
+        btnUpdateReady.setOnClickListener { onUpdateReadyTapped() }
 
         cardMeta.setOnLongClickListener {
             if (ConfigStore.hasConfig(this)) {
@@ -110,6 +123,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         requestNotificationPermissionIfNeeded()
+        cleanupAfterInstall()
         refreshUi()
         txtFooterVersion.text = "v" + BuildConfig.VERSION_NAME + " ©PayBridge(Pty) Ltd 2026"
         handleIntent(intent)
@@ -118,6 +132,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         handler.post(pollRunnable)
+        maybeCheckForUpdate()
     }
 
     override fun onPause() {
@@ -134,6 +149,65 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIntent(intent)
+    }
+
+    private fun onUpdateReadyTapped() {
+        if (hasInstallPermission()) {
+            Updater.installStagedUpdate(this)
+        } else {
+            try {
+                installPermissionLauncher.launch(
+                    Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+            } catch (_: Exception) {
+            }
+        }
+    }
+
+    private fun hasInstallPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            packageManager.canRequestPackageInstalls()
+        } else {
+            true
+        }
+    }
+
+    private fun cleanupAfterInstall() {
+        try {
+            val prefs = getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
+            val stagedVersion = prefs.getInt(Config.PREF_STAGED_UPDATE_VERSION, 0)
+            if (stagedVersion > 0 && stagedVersion <= BuildConfig.VERSION_CODE) {
+                Updater.clearStagedUpdate(this)
+            }
+        } catch (_: Exception) {
+        }
+    }
+
+    private fun maybeCheckForUpdate() {
+        executor.execute {
+            try {
+                val prefs = getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
+                val stagedUrl = prefs.getString(Config.PREF_STAGED_UPDATE_URL, null)
+                val stagedVersion = prefs.getInt(Config.PREF_STAGED_UPDATE_VERSION, 0)
+                val retryDownload = !stagedUrl.isNullOrEmpty() &&
+                    stagedVersion > BuildConfig.VERSION_CODE &&
+                    !Updater.isUpdateStaged(this)
+
+                if (retryDownload) {
+                    Updater.downloadApk(this)
+                } else {
+                    val remote = Updater.checkForUpdate(this)
+                    if (remote != null) {
+                        Updater.downloadApk(this)
+                    }
+                }
+            } catch (_: Exception) {
+            }
+            handler.post { refreshUi() }
+        }
     }
 
     private fun handleIntent(intent: Intent?) {
@@ -433,6 +507,8 @@ class MainActivity : AppCompatActivity() {
         suppressLockChange = true
         checkLock.isChecked = lockOn
         suppressLockChange = false
+
+        btnUpdateReady.visibility = if (Updater.isUpdateStaged(this)) View.VISIBLE else View.GONE
 
         val lockPrefix = if (lockOn) getString(R.string.lock_prefix) else ""
         val dnsSuffix = if (!customDns.isNullOrBlank())

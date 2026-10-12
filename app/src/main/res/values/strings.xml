@@ -26,6 +26,7 @@
     <string name="action_change_voucher">Change voucher</string>
     <string name="action_exit">Exit app</string>
     <string name="action_lock">Lock VPN on</string>
+    <string name="action_update_ready">Update ready</string>
 
     <string name="label_endpoint">Endpoint</string>
     <string name="label_duration">Duration</string>

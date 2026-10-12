@@ -32,6 +32,13 @@ jobs:
       - name: Rename APK
         run: mv app/build/outputs/apk/release/app-release.apk app/build/outputs/apk/release/TTVPN.apk
 
+      - name: Generate version.json
+        run: |
+          VERSION_CODE=$(grep -oP 'versionCode = \K[0-9]+' app/build.gradle.kts)
+          VERSION_NAME=$(grep -oP 'versionName = "\K[^"]+' app/build.gradle.kts)
+          echo "{\"versionCode\": $VERSION_CODE, \"versionName\": \"$VERSION_NAME\"}" > version.json
+          echo "Generated: $(cat version.json)"
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
@@ -46,7 +53,9 @@ jobs:
           body: |
             Automated build from commit ${{ github.sha }} on branch ${{ github.ref_name }}.
             Triggered by ${{ github.actor }}.
-          files: app/build/outputs/apk/release/TTVPN.apk
+          files: |
+            app/build/outputs/apk/release/TTVPN.apk
+            version.json
           draft: false
           prerelease: false
           make_latest: true
