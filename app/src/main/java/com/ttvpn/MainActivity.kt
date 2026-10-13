@@ -7,6 +7,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -15,7 +16,12 @@ import android.os.Looper
 import android.provider.Settings
 import android.text.Editable
 import android.text.InputType
+import android.text.Spannable
+import android.text.SpannableString
+import android.text.TextUtils
 import android.text.TextWatcher
+import android.text.style.ForegroundColorSpan
+import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -47,9 +53,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtEntitlement: TextView
     private lateinit var txtFooterVersion: TextView
     private lateinit var btnUpdateReady: TextView
-    private lateinit var btnLogs: TextView
-    private lateinit var txtFooterDot1: TextView
     private lateinit var txtFooterDot2: TextView
+    private lateinit var logEntriesContainer: LinearLayout
+    private lateinit var logsScroll: ScrollView
+    private lateinit var txtLoggingState: TextView
+    private lateinit var btnClearLog: TextView
+    private lateinit var chkKeepLog: CheckBox
 
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
@@ -57,6 +66,9 @@ class MainActivity : AppCompatActivity() {
     private var pendingStart = false
     private var isFormattingVoucher = false
     private var suppressLockChange = false
+    private var suppressLogToggle = false
+    private var lastLogFingerprint: String = ""
+    private var logUserScrolledAway: Boolean = false
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -107,14 +119,16 @@ class MainActivity : AppCompatActivity() {
         txtEntitlement = findViewById(R.id.txtEntitlement)
         txtFooterVersion = findViewById(R.id.txtFooterVersion)
         btnUpdateReady = findViewById(R.id.btnUpdateReady)
-        btnLogs = findViewById(R.id.btnLogs)
-        txtFooterDot1 = findViewById(R.id.txtFooterDot1)
         txtFooterDot2 = findViewById(R.id.txtFooterDot2)
+        logEntriesContainer = findViewById(R.id.logEntriesContainer)
+        logsScroll = findViewById(R.id.logsScroll)
+        txtLoggingState = findViewById(R.id.txtLoggingState)
+        btnClearLog = findViewById(R.id.btnClearLog)
+        chkKeepLog = findViewById(R.id.chkKeepLog)
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnExit.setOnClickListener { onExitTapped() }
         btnUpdateReady.setOnClickListener { onUpdateReadyTapped() }
-        btnLogs.setOnClickListener { showLogsDialog() }
 
         cardMeta.setOnLongClickListener {
             if (ConfigStore.hasConfig(this)) {
@@ -132,6 +146,33 @@ class MainActivity : AppCompatActivity() {
                 requestConsentThenStart()
             }
             refreshUi()
+        }
+
+        btnClearLog.setOnClickListener {
+            EventLog.clear(this)
+            renderLogPanel(force = true)
+        }
+
+        logsScroll.setOnScrollChangeListener { _, _, _, _, _ ->
+            logUserScrolledAway = !isLogsScrollAtBottom()
+        }
+
+        suppressLogToggle = true
+        chkKeepLog.isChecked = ConfigStore.isLogEnabled(this)
+        suppressLogToggle = false
+        setLoggingStateText(ConfigStore.isLogEnabled(this))
+
+        chkKeepLog.setOnCheckedChangeListener { _, isChecked ->
+            if (suppressLogToggle) return@setOnCheckedChangeListener
+            if (isChecked) {
+                ConfigStore.setLogEnabled(this, true)
+                EventLog.write(this, "EVENT", "Logging: enabled")
+            } else {
+                EventLog.write(this, "EVENT", "Logging: disabled")
+                ConfigStore.setLogEnabled(this, false)
+            }
+            setLoggingStateText(isChecked)
+            renderLogPanel(force = true)
         }
 
         requestNotificationPermissionIfNeeded()
@@ -225,74 +266,139 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun showLogsDialog() {
-        val view = LayoutInflater.from(this).inflate(R.layout.dialog_logs, null)
-        val logsContainer = view.findViewById<LinearLayout>(R.id.logsContainer)
-        val logsScroll = view.findViewById<ScrollView>(R.id.logsScroll)
-        val txtLogStatus = view.findViewById<TextView>(R.id.txtLogStatus)
-        val btnLogsClear = view.findViewById<TextView>(R.id.btnLogsClear)
-        val btnLogsClose = view.findViewById<TextView>(R.id.btnLogsClose)
-        val checkKeepLog = view.findViewById<CheckBox>(R.id.checkKeepLog)
+    // -------- LOGS panel --------
 
-        checkKeepLog.isChecked = ConfigStore.isLogEnabled(this)
+    private fun setLoggingStateText(enabled: Boolean) {
+        val label = "Logging: "
+        val word = if (enabled) "ON" else "OFF"
+        val full = label + word
+        val sp = SpannableString(full)
+        val labelColor = ContextCompat.getColor(this, R.color.muted_label)
+        val wordColor = ContextCompat.getColor(
+            this, if (enabled) R.color.brand_teal else R.color.state_red
+        )
+        sp.setSpan(
+            ForegroundColorSpan(labelColor),
+            0, label.length,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        sp.setSpan(
+            ForegroundColorSpan(wordColor),
+            label.length, full.length,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        sp.setSpan(
+            StyleSpan(Typeface.BOLD),
+            label.length, full.length,
+            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+        )
+        txtLoggingState.text = sp
+    }
 
-        fun updateStatus() {
-            txtLogStatus.text = getString(
-                if (ConfigStore.isLogEnabled(this)) R.string.log_status_on else R.string.log_status_off
-            )
-        }
+    private fun isLogsScrollAtBottom(): Boolean {
+        val child = logsScroll.getChildAt(0) ?: return true
+        return logsScroll.scrollY + logsScroll.height >= child.height - 8
+    }
 
-        fun render() {
-            logsContainer.removeAllViews()
-            val entries = EventLog.readAll(this)
-            if (entries.isEmpty()) {
-                val empty = TextView(this).apply {
-                    text = getString(R.string.dialog_logs_empty)
-                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
-                    textSize = 11f
-                    setTypeface(typeface, android.graphics.Typeface.ITALIC)
+    private fun tagColourFor(tag: String): Int = when (tag) {
+        "OK" -> R.color.brand_teal
+        "INFO" -> R.color.info_blue
+        "WARN" -> R.color.state_amber
+        "ERR" -> R.color.state_red
+        else -> R.color.text_dim
+    }
+
+    private fun renderLogPanel(force: Boolean = false) {
+        val entries = EventLog.readAll(this)
+        val fingerprint = "${entries.size}:${entries.lastOrNull()?.timestamp.orEmpty()}"
+        if (!force && fingerprint == lastLogFingerprint) return
+        lastLogFingerprint = fingerprint
+
+        val density = resources.displayMetrics.density
+        val padV = (3 * density).toInt()
+
+        logEntriesContainer.removeAllViews()
+
+        if (entries.isEmpty()) {
+            val empty = TextView(this).apply {
+                text = getString(R.string.dialog_logs_empty)
+                setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+                textSize = 11f
+                typeface = Typeface.create(Typeface.MONOSPACE, Typeface.ITALIC)
+                setPadding(0, padV, 0, padV)
+            }
+            logEntriesContainer.addView(empty)
+        } else {
+            entries.forEachIndexed { index, entry ->
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    setPadding(0, padV, 0, padV)
                 }
-                logsContainer.addView(empty)
-            } else {
-                for (entry in entries) {
-                    val row = TextView(this).apply {
-                        text = "${entry.timestamp}  ${entry.tag}  ${entry.message}"
-                        textSize = 11f
-                        setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_dim))
-                        typeface = android.graphics.Typeface.MONOSPACE
-                        setPadding(0, 4, 0, 4)
+
+                val time = TextView(this).apply {
+                    text = entry.timestamp
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+                    typeface = Typeface.MONOSPACE
+                    textSize = 10f
+                    layoutParams = LinearLayout.LayoutParams(
+                        (60 * density).toInt(),
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                }
+
+                val tag = TextView(this).apply {
+                    text = entry.tag
+                    setTextColor(
+                        ContextCompat.getColor(this@MainActivity, tagColourFor(entry.tag))
+                    )
+                    typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+                    textSize = 10f
+                    layoutParams = LinearLayout.LayoutParams(
+                        (48 * density).toInt(),
+                        LinearLayout.LayoutParams.WRAP_CONTENT
+                    )
+                }
+
+                val msg = TextView(this).apply {
+                    text = entry.message
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_dim))
+                    typeface = Typeface.MONOSPACE
+                    textSize = 11f
+                    ellipsize = TextUtils.TruncateAt.END
+                    maxLines = 2
+                    layoutParams = LinearLayout.LayoutParams(
+                        0,
+                        LinearLayout.LayoutParams.WRAP_CONTENT,
+                        1f
+                    )
+                }
+
+                row.addView(time)
+                row.addView(tag)
+                row.addView(msg)
+                logEntriesContainer.addView(row)
+
+                if (index < entries.size - 1) {
+                    val divider = View(this).apply {
+                        layoutParams = LinearLayout.LayoutParams(
+                            LinearLayout.LayoutParams.MATCH_PARENT,
+                            1
+                        )
+                        setBackgroundColor(
+                            ContextCompat.getColor(this@MainActivity, R.color.border_inner)
+                        )
                     }
-                    logsContainer.addView(row)
+                    logEntriesContainer.addView(divider)
                 }
             }
+        }
+
+        if (!logUserScrolledAway) {
             logsScroll.post { logsScroll.fullScroll(View.FOCUS_DOWN) }
         }
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(view)
-            .setCancelable(true)
-            .create()
-
-        btnLogsClear.setOnClickListener {
-            EventLog.clear(this)
-            render()
-        }
-        btnLogsClose.setOnClickListener { dialog.dismiss() }
-
-        checkKeepLog.setOnCheckedChangeListener { _, isChecked ->
-            ConfigStore.setLogEnabled(this, isChecked)
-            updateStatus()
-            EventLog.write(
-                this, "EVENT",
-                if (isChecked) "Logging enabled" else "Logging disabled"
-            )
-            render()
-        }
-
-        updateStatus()
-        render()
-        dialog.show()
     }
+
+    // -------- intent handling --------
 
     private fun handleIntent(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
@@ -610,8 +716,9 @@ class MainActivity : AppCompatActivity() {
 
         val updateStaged = Updater.isUpdateStaged(this)
         btnUpdateReady.visibility = if (updateStaged) View.VISIBLE else View.GONE
-        txtFooterDot1.visibility = if (updateStaged) View.VISIBLE else View.GONE
-        txtFooterDot2.visibility = View.VISIBLE
+        txtFooterDot2.visibility = if (updateStaged) View.VISIBLE else View.GONE
+
+        renderLogPanel()
 
         val lockPrefix = if (lockOn) getString(R.string.lock_prefix) else ""
         val dnsSuffix = if (!customDns.isNullOrBlank())
