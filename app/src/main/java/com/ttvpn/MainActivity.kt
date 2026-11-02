@@ -24,7 +24,6 @@ import android.text.style.ForegroundColorSpan
 import android.text.style.StyleSpan
 import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.Button
 import android.widget.CheckBox
 import android.widget.EditText
@@ -59,6 +58,12 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtLoggingState: TextView
     private lateinit var btnClearLog: TextView
     private lateinit var chkKeepLog: CheckBox
+
+    private lateinit var btnCerberusRefresh: TextView
+    private lateinit var txtCerberusStatus: TextView
+    private lateinit var txtCerberusVitals: TextView
+    private lateinit var txtCerberusFeedLabel: TextView
+    private lateinit var cerberusThreatFeed: LinearLayout
 
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
@@ -126,9 +131,16 @@ class MainActivity : AppCompatActivity() {
         btnClearLog = findViewById(R.id.btnClearLog)
         chkKeepLog = findViewById(R.id.chkKeepLog)
 
+        btnCerberusRefresh = findViewById(R.id.btnCerberusRefresh)
+        txtCerberusStatus = findViewById(R.id.txtCerberusStatus)
+        txtCerberusVitals = findViewById(R.id.txtCerberusVitals)
+        txtCerberusFeedLabel = findViewById(R.id.txtCerberusFeedLabel)
+        cerberusThreatFeed = findViewById(R.id.cerberusThreatFeed)
+
         btnToggle.setOnClickListener { onToggleTapped() }
         btnExit.setOnClickListener { onExitTapped() }
         btnUpdateReady.setOnClickListener { onUpdateReadyTapped() }
+        btnCerberusRefresh.setOnClickListener { refreshCerberus() }
 
         cardMeta.setOnLongClickListener {
             if (ConfigStore.hasConfig(this)) {
@@ -188,6 +200,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         handler.post(pollRunnable)
         maybeCheckForUpdate()
+        refreshCerberus()
     }
 
     override fun onPause() {
@@ -205,6 +218,117 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         handleIntent(intent)
     }
+
+    // ---------------- CERBERUS ----------------
+
+    private fun refreshCerberus() {
+        btnCerberusRefresh.isEnabled = false
+        txtCerberusStatus.text = "Loading…"
+        txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.muted_label))
+
+        executor.execute {
+            val result = CerberusClient.fetch()
+            handler.post {
+                btnCerberusRefresh.isEnabled = true
+                when (result) {
+                    is CerberusResult.Success -> renderCerberus(result.status)
+                    is CerberusResult.Failure -> {
+                        txtCerberusStatus.text = "Error: ${result.reason}"
+                        txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.state_red))
+                        hideCerberusDetails()
+                    }
+                    CerberusResult.NetworkError -> {
+                        txtCerberusStatus.text = "Network error — cannot reach VPS"
+                        txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.state_red))
+                        hideCerberusDetails()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun hideCerberusDetails() {
+        txtCerberusVitals.visibility = View.GONE
+        txtCerberusFeedLabel.visibility = View.GONE
+        cerberusThreatFeed.visibility = View.GONE
+    }
+
+    private fun renderCerberus(s: CerberusStatus) {
+        val jailCount = s.jails.size
+        txtCerberusStatus.text = "LIVE · $jailCount jail${if (jailCount == 1) "" else "s"} monitored"
+        txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.brand_teal))
+
+        val sb = StringBuilder()
+        sb.append("Uptime   ").append(formatUptimeHuman(s.uptimeSeconds)).append('\n')
+        sb.append("Mem      ").append(s.memPercent).append("%   ")
+            .append(formatBytes(s.memUsedBytes)).append(" / ").append(formatBytes(s.memTotalBytes)).append('\n')
+        sb.append("Disk     ").append(s.diskPercent).append("%   ")
+            .append(formatBytes(s.diskUsedBytes)).append(" / ").append(formatBytes(s.diskTotalBytes)).append('\n')
+        sb.append("Fail2ban ").append(s.bannedTotal).append(" banned across ")
+            .append(jailCount).append(" jail").append(if (jailCount == 1) "" else "s").append('\n')
+        if (s.failedServices.isEmpty()) {
+            sb.append("Failed   none")
+        } else {
+            sb.append("Failed   ").append(s.failedServices.joinToString(", "))
+        }
+        txtCerberusVitals.text = sb.toString()
+        txtCerberusVitals.setTextColor(
+            ContextCompat.getColor(
+                this,
+                if (s.failedServices.isEmpty() && s.bannedTotal == 0) R.color.text_main else R.color.state_amber
+            )
+        )
+        txtCerberusVitals.visibility = View.VISIBLE
+
+        cerberusThreatFeed.removeAllViews()
+        txtCerberusFeedLabel.visibility = View.VISIBLE
+        cerberusThreatFeed.visibility = View.VISIBLE
+
+        if (s.recentBanned.isEmpty()) {
+            val tv = TextView(this).apply {
+                text = "No active bans"
+                setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+                typeface = Typeface.create(Typeface.MONOSPACE, Typeface.ITALIC)
+                textSize = 10f
+            }
+            cerberusThreatFeed.addView(tv)
+        } else {
+            s.recentBanned.take(10).forEach { b ->
+                val tv = TextView(this).apply {
+                    text = "${b.ip}   [${b.jail}]"
+                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.state_amber))
+                    typeface = Typeface.MONOSPACE
+                    textSize = 10f
+                    setPadding(0, 2, 0, 2)
+                }
+                cerberusThreatFeed.addView(tv)
+            }
+        }
+    }
+
+    private fun formatUptimeHuman(seconds: Long): String {
+        val d = seconds / 86400
+        val h = (seconds % 86400) / 3600
+        val m = (seconds % 3600) / 60
+        return when {
+            d > 0 -> "${d}d ${h}h ${m}m"
+            h > 0 -> "${h}h ${m}m"
+            else -> "${m}m"
+        }
+    }
+
+    private fun formatBytes(b: Long): String {
+        val kb = 1024.0
+        val mb = kb * 1024
+        val gb = mb * 1024
+        return when {
+            b >= gb -> String.format(Locale.US, "%.1f GB", b / gb)
+            b >= mb -> String.format(Locale.US, "%.0f MB", b / mb)
+            else -> String.format(Locale.US, "%.0f KB", b / kb)
+        }
+    }
+
+    // ---------------- UPDATER / LOGS / EXISTING ----------------
 
     private fun onUpdateReadyTapped() {
         if (hasInstallPermission()) {
@@ -265,8 +389,6 @@ class MainActivity : AppCompatActivity() {
             handler.post { refreshUi() }
         }
     }
-
-    // -------- LOGS panel --------
 
     private fun setLoggingStateText(enabled: Boolean) {
         val label = "Logging: "
@@ -398,8 +520,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // -------- intent handling --------
-
     private fun handleIntent(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
         val data = intent.data ?: return
@@ -466,8 +586,6 @@ class MainActivity : AppCompatActivity() {
             .setPositiveButton(R.string.dialog_locked_ok, null)
             .show()
     }
-
-    // -------- custom DNS --------
 
     private fun showDnsDialog() {
         val density = resources.displayMetrics.density
@@ -541,8 +659,6 @@ class MainActivity : AppCompatActivity() {
 
         refreshUi()
     }
-
-    // -------- voucher --------
 
     private fun showVoucherDialog(prefill: String?) {
         val view = LayoutInflater.from(this).inflate(R.layout.voucher, null)
@@ -799,7 +915,6 @@ class MainActivity : AppCompatActivity() {
     ) {
         val wordC = ContextCompat.getColor(this, wordColour)
         val dotC = ContextCompat.getColor(this, dotColour)
-
         txtState.text = text
         txtState.setTextColor(wordC)
         txtSubstate.text = subtext

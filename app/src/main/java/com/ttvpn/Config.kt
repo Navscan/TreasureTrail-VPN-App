@@ -4,6 +4,7 @@ object Config {
     const val BASE_URL = "https://treasuretrail.africa/ttvpn"
     const val ENDPOINT_REGISTER = "$BASE_URL/api/register"
     const val ENDPOINT_HEALTH = "$BASE_URL/api/health"
+    const val ENDPOINT_CERBERUS = "https://api.flipstack.store/api/cerberus/status"
 
     const val WG_ENDPOINT_DISPLAY = "154.66.198.207:51820"
     const val WG_SERVER_FLAG = "🇿🇦"
@@ -11,7 +12,6 @@ object Config {
 
     const val HTTP_CONNECT_TIMEOUT_MS = 10_000
     const val HTTP_READ_TIMEOUT_MS = 20_000
-
     const val PREFS_NAME = "ttvpn_prefs"
     const val PREF_WG_CONFIG = "wg_config"
     const val PREF_WG_CONFIG_ORIGINAL = "wg_config_original"
@@ -22,7 +22,6 @@ object Config {
     const val PREF_TUNNEL_STARTED_AT = "tunnel_started_at"
     const val PREF_LOCK_ENABLED = "lock_enabled"
     const val PREF_CUSTOM_DNS = "custom_dns"
-
     const val TUNNEL_NAME = "TTVPN"
     const val NOTIFICATION_CHANNEL_ID = "vpn"
     const val NOTIFICATION_ID = 1
@@ -32,7 +31,6 @@ object Config {
     const val RECONNECT_DELAY_MS = 1_500L
     const val DNS_RESTART_DELAY_MS = 800L
 
-    // -------- in-app auto-updater --------
     const val GITHUB_API_LATEST_RELEASE =
         "https://api.github.com/repos/Navscan/TreasureTrail-VPN-App/releases/latest"
     const val UPDATER_USER_AGENT = "TTVPN-Android/1.4"
@@ -45,7 +43,6 @@ object Config {
     const val UPDATER_APK_NAME = "TTVPN.apk"
     const val UPDATER_FILEPROVIDER_AUTHORITY = "com.ttvpn.fileprovider"
 
-    // -------- in-app event log --------
     const val PREF_LOG_ENABLED = "log_enabled"
     const val PREF_EVENT_LOG = "event_log"
     const val LOG_MAX_ENTRIES = 200
