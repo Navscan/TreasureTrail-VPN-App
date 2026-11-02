@@ -34,7 +34,7 @@ object Config {
     const val GITHUB_API_LATEST_RELEASE =
         "https://api.github.com/repos/Navscan/TreasureTrail-VPN-App/releases/latest"
     const val UPDATER_USER_AGENT = "TTVPN-Android/1.4"
-    const val UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000L
+    const val UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000L
     const val PREF_UPDATE_CHECKED_AT = "update_checked_at"
     const val PREF_STAGED_UPDATE_URL = "staged_update_url"
     const val PREF_STAGED_UPDATE_PATH = "staged_update_path"
