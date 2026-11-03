@@ -9,7 +9,7 @@ object Config {
     // SaaS Auth Endpoints
     const val ENDPOINT_AUTH_LOGIN = "$BASE_URL/api/auth/login"
     const val ENDPOINT_AUTH_REGISTER = "$BASE_URL/api/auth/register"
-    const val ENDPOINT_LICENSE_CHECK = "$BASE_URL/api/license/check"
+    const val ENDPOINT_AUTH_ME = "$BASE_URL/api/auth/me"
     const val ENDPOINT_PROVISION = "$BASE_URL/api/config/provision"
     const val ENDPOINT_PAY_INITIATE = "$BASE_URL/api/pay/initiate"
 
@@ -20,7 +20,7 @@ object Config {
     const val HTTP_CONNECT_TIMEOUT_MS = 10_000
     const val HTTP_READ_TIMEOUT_MS = 20_000
     const val PREFS_NAME = "ttvpn_prefs"
-    
+
     // Auth Keys
     const val PREF_AUTH_TOKEN = "auth_token"
     const val PREF_USER_TIER = "user_tier"
@@ -34,6 +34,7 @@ object Config {
     const val PREF_TUNNEL_STARTED_AT = "tunnel_started_at"
     const val PREF_LOCK_ENABLED = "lock_enabled"
     const val PREF_CUSTOM_DNS = "custom_dns"
+    
     const val TUNNEL_NAME = "CPVPN"
     const val NOTIFICATION_CHANNEL_ID = "vpn"
     const val NOTIFICATION_ID = 1
@@ -43,8 +44,7 @@ object Config {
     const val RECONNECT_DELAY_MS = 1_500L
     const val DNS_RESTART_DELAY_MS = 800L
 
-    const val GITHUB_API_LATEST_RELEASE =
-        "https://api.github.com/repos/Navscan/TreasureTrail-VPN-App/releases/latest"
+    const val GITHUB_API_LATEST_RELEASE = "https://api.github.com/repos/Navscan/TreasureTrail-VPN-App/releases/latest"
     const val UPDATER_USER_AGENT = "CPVPN-Android/2.0"
     const val UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000L
     const val PREF_UPDATE_CHECKED_AT = "update_checked_at"
@@ -54,7 +54,7 @@ object Config {
     const val UPDATER_SUBDIR = "updates"
     const val UPDATER_APK_NAME = "TTVPN.apk"
     const val UPDATER_FILEPROVIDER_AUTHORITY = "com.paybridge.cpvpn.fileprovider"
-
+    
     const val PREF_LOG_ENABLED = "log_enabled"
     const val PREF_EVENT_LOG = "event_log"
     const val LOG_MAX_ENTRIES = 200

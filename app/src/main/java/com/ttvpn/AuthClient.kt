@@ -25,16 +25,18 @@ object AuthClient {
         return postAuth(Config.ENDPOINT_AUTH_REGISTER, body)
     }
 
+    // Updated to use the new /api/auth/me endpoint
     fun checkLicense(token: String): LicenseResult {
         return try {
-            val url = URL(Config.ENDPOINT_LICENSE_CHECK)
+            val url = URL(Config.ENDPOINT_AUTH_ME)
             val conn = (url.openConnection() as HttpURLConnection).apply {
                 requestMethod = "GET"
                 setRequestProperty("Authorization", "Bearer $token")
+                setRequestProperty("Accept", "application/json")
                 connectTimeout = Config.HTTP_CONNECT_TIMEOUT_MS
                 readTimeout = Config.HTTP_READ_TIMEOUT_MS
             }
-            
+
             val code = conn.responseCode
             val stream = if (code in 200..299) conn.inputStream else conn.errorStream
             val response = stream?.bufferedReader()?.use(BufferedReader::readText).orEmpty()
