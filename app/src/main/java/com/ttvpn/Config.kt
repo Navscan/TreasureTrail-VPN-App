@@ -1,7 +1,7 @@
 package com.ttvpn
 
 object Config {
-    const val BASE_URL = "https://treasuretrail.africa/ttvpn"
+    const val BASE_URL = "https://api.flipstack.store/cpvpn"
     const val ENDPOINT_REGISTER = "$BASE_URL/api/register"
     const val ENDPOINT_HEALTH = "$BASE_URL/api/health"
     const val ENDPOINT_CERBERUS = "https://api.flipstack.store/api/cerberus/status"
@@ -22,7 +22,7 @@ object Config {
     const val PREF_TUNNEL_STARTED_AT = "tunnel_started_at"
     const val PREF_LOCK_ENABLED = "lock_enabled"
     const val PREF_CUSTOM_DNS = "custom_dns"
-    const val TUNNEL_NAME = "TTVPN"
+    const val TUNNEL_NAME = "CPVPN"
     const val NOTIFICATION_CHANNEL_ID = "vpn"
     const val NOTIFICATION_ID = 1
 
@@ -33,7 +33,7 @@ object Config {
 
     const val GITHUB_API_LATEST_RELEASE =
         "https://api.github.com/repos/Navscan/TreasureTrail-VPN-App/releases/latest"
-    const val UPDATER_USER_AGENT = "TTVPN-Android/1.4"
+    const val UPDATER_USER_AGENT = "CPVPN-Android/2.0"
     const val UPDATE_CHECK_INTERVAL_MS = 5 * 60 * 1000L
     const val PREF_UPDATE_CHECKED_AT = "update_checked_at"
     const val PREF_STAGED_UPDATE_URL = "staged_update_url"
@@ -41,9 +41,10 @@ object Config {
     const val PREF_STAGED_UPDATE_VERSION = "staged_update_version"
     const val UPDATER_SUBDIR = "updates"
     const val UPDATER_APK_NAME = "TTVPN.apk"
-    const val UPDATER_FILEPROVIDER_AUTHORITY = "com.ttvpn.fileprovider"
+    const val UPDATER_FILEPROVIDER_AUTHORITY = "com.paybridge.cpvpn.fileprovider"
 
     const val PREF_LOG_ENABLED = "log_enabled"
     const val PREF_EVENT_LOG = "event_log"
     const val LOG_MAX_ENTRIES = 200
 }
+

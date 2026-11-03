@@ -8,11 +8,11 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.ttvpn"
+        applicationId = "com.paybridge.cpvpn"
         minSdk = 23
         targetSdk = 34
-        versionCode = 9
-        versionName = "1.6.2"
+        versionCode = 10
+        versionName = "2.0.0"
     }
 
     signingConfigs {

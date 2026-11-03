@@ -219,8 +219,6 @@ class MainActivity : AppCompatActivity() {
         handleIntent(intent)
     }
 
-    // ---------------- CERBERUS ----------------
-
     private fun refreshCerberus() {
         btnCerberusRefresh.isEnabled = false
         txtCerberusStatus.text = "Loading…"
@@ -327,8 +325,6 @@ class MainActivity : AppCompatActivity() {
             else -> String.format(Locale.US, "%.0f KB", b / kb)
         }
     }
-
-    // ---------------- UPDATER / LOGS / EXISTING ----------------
 
     private fun onUpdateReadyTapped() {
         if (hasInstallPermission()) {
@@ -523,7 +519,8 @@ class MainActivity : AppCompatActivity() {
     private fun handleIntent(intent: Intent?) {
         if (intent?.action != Intent.ACTION_VIEW) return
         val data = intent.data ?: return
-        if (data.scheme != "treasuretrailvpn") return
+        val scheme = data.scheme ?: return
+        if (scheme != "treasuretrailvpn" && scheme != "cpvpn") return
 
         when (data.host) {
             "start" -> onToggleTapped()

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">TTVPN™</string>
+    <string name="app_name">CPvpn</string>
 
     <string name="state_disconnected">DISCONNECTED</string>
     <string name="state_connecting">CONNECTING</string>
@@ -60,7 +60,7 @@
 
     <string name="error_empty_voucher">Enter the full 12-character code.</string>
     <string name="error_voucher_not_found">Voucher not found. Check the code and try again.</string>
-    <string name="error_voucher_expired">Voucher expired. Get a new one from the TreasureTrail app.</string>
+    <string name="error_voucher_expired">Voucher expired. Get a new one from the Cerberus Protocol app.</string>
     <string name="error_voucher_used">Voucher already used. Request a new one.</string>
     <string name="error_subscription_inactive">Your subscription is not active.</string>
     <string name="error_user_not_found">Account not found.</string>
@@ -72,7 +72,7 @@
     <string name="duration_placeholder">--:--</string>
     <string name="data_placeholder">— / —</string>
 
-    <string name="wordmark_tt1">T</string>
-    <string name="wordmark_tt2">T</string>
+    <string name="wordmark_tt1">C</string>
+    <string name="wordmark_tt2">P</string>
     <string name="wordmark_vpn">vpn</string>
 </resources>

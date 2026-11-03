@@ -303,7 +303,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- ===================== CERBERUS DASHBOARD ===================== -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -523,7 +522,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="TTvpn"
+                android:text="CPvpn"
                 android:textColor="@color/brand_gold"
                 android:textSize="10sp"
                 android:textStyle="bold" />
@@ -533,7 +532,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                android:text="v1.6.1 ©PayBridge(Pty) Ltd 2026"
+                android:text="v2.0.0 ©PayBridge(Pty) Ltd 2026"
                 android:textColor="@color/muted_label"
                 android:textSize="10sp" />
         </LinearLayout>
