@@ -11,6 +11,7 @@ object Config {
     const val ENDPOINT_AUTH_REGISTER = "$BASE_URL/api/auth/register"
     const val ENDPOINT_LICENSE_CHECK = "$BASE_URL/api/license/check"
     const val ENDPOINT_PROVISION = "$BASE_URL/api/config/provision"
+    const val ENDPOINT_PAY_INITIATE = "$BASE_URL/api/pay/initiate"
 
     const val WG_ENDPOINT_DISPLAY = "154.66.198.207:51820"
     const val WG_SERVER_FLAG = "🇿🇦"

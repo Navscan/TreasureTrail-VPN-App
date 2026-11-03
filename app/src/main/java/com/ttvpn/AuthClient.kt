@@ -11,6 +11,8 @@ sealed class AuthResult {
     object NetworkError : AuthResult()
 }
 
+data class LicenseResult(val isActive: Boolean, val tier: String)
+
 object AuthClient {
 
     fun login(email: String, password: String): AuthResult {
@@ -23,7 +25,7 @@ object AuthClient {
         return postAuth(Config.ENDPOINT_AUTH_REGISTER, body)
     }
 
-    fun checkLicense(token: String): Boolean {
+    fun checkLicense(token: String): LicenseResult {
         return try {
             val url = URL(Config.ENDPOINT_LICENSE_CHECK)
             val conn = (url.openConnection() as HttpURLConnection).apply {
@@ -40,12 +42,15 @@ object AuthClient {
 
             if (code == 200) {
                 val json = JSONObject(response)
-                json.optBoolean("ok", false) && json.optBoolean("is_active", false)
+                LicenseResult(
+                    isActive = json.optBoolean("ok", false) && json.optBoolean("is_active", false),
+                    tier = json.optString("tier", "free")
+                )
             } else {
-                false
+                LicenseResult(false, "free")
             }
         } catch (e: Exception) {
-            false
+            LicenseResult(false, "free")
         }
     }
 

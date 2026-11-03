@@ -59,6 +59,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnClearLog: TextView
     private lateinit var chkKeepLog: CheckBox
 
+    private lateinit var cardUpgrade: MaterialCardView
+    private lateinit var btnUpgrade: Button
+
     private lateinit var cardCerberus: MaterialCardView
     private lateinit var btnCerberusRefresh: TextView
     private lateinit var txtCerberusStatus: TextView
@@ -69,6 +72,7 @@ class MainActivity : AppCompatActivity() {
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
 
+    private var awaitingPayment = false
     private var pendingStart = false
     private var isFormattingVoucher = false
     private var suppressLockChange = false
@@ -139,6 +143,9 @@ class MainActivity : AppCompatActivity() {
         btnClearLog = findViewById(R.id.btnClearLog)
         chkKeepLog = findViewById(R.id.chkKeepLog)
 
+        cardUpgrade = findViewById(R.id.cardUpgrade)
+        btnUpgrade = findViewById(R.id.btnUpgrade)
+
         cardCerberus = findViewById(R.id.cardCerberus)
         btnCerberusRefresh = findViewById(R.id.btnCerberusRefresh)
         txtCerberusStatus = findViewById(R.id.txtCerberusStatus)
@@ -147,6 +154,7 @@ class MainActivity : AppCompatActivity() {
         cerberusThreatFeed = findViewById(R.id.cerberusThreatFeed)
 
         btnToggle.setOnClickListener { onToggleTapped() }
+        btnUpgrade.setOnClickListener { showUpgradeDialog() }
         btnExit.setOnClickListener { 
             ConfigStore.clearAuth(this)
             startActivity(Intent(this, LoginActivity::class.java))
@@ -214,12 +222,17 @@ class MainActivity : AppCompatActivity() {
         handler.post(pollRunnable)
         maybeCheckForUpdate()
         
-        val tier = ConfigStore.getUserTier(this)
-        if (tier == "enterprise" && ConfigStore.hasConfig(this)) {
-            cardCerberus.visibility = View.VISIBLE
-            refreshCerberus()
+        if (awaitingPayment) {
+            awaitingPayment = false
+            checkLicenseAndRefresh()
         } else {
-            cardCerberus.visibility = View.GONE
+            val tier = ConfigStore.getUserTier(this)
+            if (tier == "enterprise" && ConfigStore.hasConfig(this)) {
+                cardCerberus.visibility = View.VISIBLE
+                refreshCerberus()
+            } else {
+                cardCerberus.visibility = View.GONE
+            }
         }
     }
 
@@ -237,6 +250,49 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIntent(intent)
+    }
+
+    private fun checkLicenseAndRefresh() {
+        val token = ConfigStore.getAuthToken(this) ?: return
+        executor.execute {
+            val result = AuthClient.checkLicense(token)
+            handler.post {
+                if (result.isActive) {
+                    ConfigStore.saveAuth(this, token, result.tier)
+                    EventLog.write(this, "OK", "License verified: ${result.tier}")
+                    refreshUi()
+                }
+            }
+        }
+    }
+
+    private fun showUpgradeDialog() {
+        val plans = arrayOf("Pro - R99/month", "Enterprise - R299/month")
+        AlertDialog.Builder(this)
+            .setTitle("Select Plan")
+            .setItems(plans) { _, which ->
+                val plan = if (which == 0) "pro" else "enterprise"
+                initiatePayment(plan)
+            }
+            .show()
+    }
+
+    private fun initiatePayment(plan: String) {
+        val token = ConfigStore.getAuthToken(this) ?: return
+        EventLog.write(this, "INFO", "Initiating $plan payment...")
+        executor.execute {
+            val url = ApiClient.initiatePayment(token, plan)
+            handler.post {
+                if (url != null) {
+                    awaitingPayment = true
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    startActivity(intent)
+                } else {
+                    EventLog.write(this, "ERR", "Payment initiation failed")
+                    showErrorDialog("Could not initiate payment.")
+                }
+            }
+        }
     }
 
     private fun refreshCerberus() {
@@ -535,9 +591,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         executor.execute {
-            val isActive = AuthClient.checkLicense(token)
+            val result = AuthClient.checkLicense(token)
             handler.post {
-                if (!isActive) {
+                if (!result.isActive) {
                     AlertDialog.Builder(this)
                         .setTitle("Subscription Inactive")
                         .setMessage("Your subscription is not active. Please upgrade to Pro or Enterprise.")
@@ -551,20 +607,20 @@ class MainActivity : AppCompatActivity() {
                     btnToggle.isEnabled = false
                     
                     executor.execute {
-                        val result = ApiClient.provisionConfig(token)
+                        val provResult = ApiClient.provisionConfig(token)
                         handler.post {
                             btnToggle.isEnabled = true
-                            when (result) {
+                            when (provResult) {
                                 is RegisterResult.Success -> {
-                                    ConfigStore.saveConfig(this, result.config, result.assignedIp, null)
+                                    ConfigStore.saveConfig(this, provResult.config, provResult.assignedIp, null)
                                     EventLog.write(this, "OK", "VPN config provisioned")
                                     pendingStart = true
                                     requestConsentThenStart()
                                     refreshUi()
                                 }
                                 is RegisterResult.Failure -> {
-                                    EventLog.write(this, "ERR", "Provision failed: ${result.reason}")
-                                    showErrorDialog("Failed to get VPN config: ${result.reason}")
+                                    EventLog.write(this, "ERR", "Provision failed: ${provResult.reason}")
+                                    showErrorDialog("Failed to get VPN config: ${provResult.reason}")
                                 }
                                 RegisterResult.NetworkError -> {
                                     EventLog.write(this, "ERR", "Provision network error")
@@ -836,10 +892,23 @@ class MainActivity : AppCompatActivity() {
         val connecting = pendingStart && !running
         val lockOn = ConfigStore.isLockEnabled(this)
         val customDns = ConfigStore.getCustomDns(this)
+        val tier = ConfigStore.getUserTier(this)
 
         suppressLockChange = true
         checkLock.isChecked = lockOn
         suppressLockChange = false
+
+        if (tier == "free") {
+            cardUpgrade.visibility = View.VISIBLE
+        } else {
+            cardUpgrade.visibility = View.GONE
+        }
+
+        if (tier == "enterprise" && hasConfig) {
+            cardCerberus.visibility = View.VISIBLE
+        } else {
+            cardCerberus.visibility = View.GONE
+        }
 
         val updateStaged = Updater.isUpdateStaged(this)
         btnUpdateReady.visibility = if (updateStaged) View.VISIBLE else View.GONE
