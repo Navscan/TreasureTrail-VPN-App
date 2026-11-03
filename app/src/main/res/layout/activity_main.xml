@@ -309,10 +309,13 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- CERBERUS CARD (HIDDEN BY DEFAULT) -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardCerberus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:visibility="gone"
                 app:cardBackgroundColor="@color/panel_bg"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"

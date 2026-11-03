@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnClearLog: TextView
     private lateinit var chkKeepLog: CheckBox
 
+    private lateinit var cardCerberus: MaterialCardView
     private lateinit var btnCerberusRefresh: TextView
     private lateinit var txtCerberusStatus: TextView
     private lateinit var txtCerberusVitals: TextView
@@ -131,6 +132,7 @@ class MainActivity : AppCompatActivity() {
         btnClearLog = findViewById(R.id.btnClearLog)
         chkKeepLog = findViewById(R.id.chkKeepLog)
 
+        cardCerberus = findViewById(R.id.cardCerberus)
         btnCerberusRefresh = findViewById(R.id.btnCerberusRefresh)
         txtCerberusStatus = findViewById(R.id.txtCerberusStatus)
         txtCerberusVitals = findViewById(R.id.txtCerberusVitals)
@@ -200,7 +202,15 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         handler.post(pollRunnable)
         maybeCheckForUpdate()
-        refreshCerberus()
+        
+        // TODO: Replace "enterprise" with real check from ConfigStore when backend supports tiering
+        // For now, we show it only if config exists (simulating a logged-in state)
+        if (ConfigStore.hasConfig(this)) {
+            cardCerberus.visibility = View.VISIBLE
+            refreshCerberus()
+        } else {
+            cardCerberus.visibility = View.GONE
+        }
     }
 
     override fun onPause() {
@@ -220,6 +230,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshCerberus() {
+        if (cardCerberus.visibility != View.VISIBLE) return
+
         btnCerberusRefresh.isEnabled = false
         txtCerberusStatus.text = "Loading…"
         txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.muted_label))
@@ -782,16 +794,16 @@ class MainActivity : AppCompatActivity() {
 
     private fun formatVoucher(raw: String): String {
         val clean = raw.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
-        val body = if (clean.startsWith("TVPN")) clean.substring(4) else clean
+        val body = if (clean.startsWith("CPVPN")) clean.substring(5) else if (clean.startsWith("TVPN")) clean.substring(4) else clean
         val trimmed = body.take(12)
         val parts = trimmed.chunked(4)
-        return if (parts.isEmpty()) "TVPN-"
-        else "TVPN-" + parts.joinToString("-")
+        return if (parts.isEmpty()) "CPVPN-"
+        else "CPVPN-" + parts.joinToString("-")
     }
 
     private fun isVoucherComplete(code: String): Boolean {
         val clean = code.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
-        val body = if (clean.startsWith("TVPN")) clean.substring(4) else clean
+        val body = if (clean.startsWith("CPVPN")) clean.substring(5) else if (clean.startsWith("TVPN")) clean.substring(4) else clean
         return body.length == 12 && body.all { it.isLetterOrDigit() }
     }
 
@@ -800,7 +812,7 @@ class MainActivity : AppCompatActivity() {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val text = cm.primaryClip?.getItemAt(0)?.text?.toString() ?: return null
             val clean = text.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
-            val body = if (clean.startsWith("TVPN")) clean.substring(4) else clean
+            val body = if (clean.startsWith("CPVPN")) clean.substring(5) else if (clean.startsWith("TVPN")) clean.substring(4) else clean
             if (body.length == 12) text else null
         } catch (_: Exception) {
             null
