@@ -31,7 +31,7 @@
         android:autofillHints=""
         android:backgroundTint="@color/brand_gold"
         android:fontFamily="monospace"
-        android:hint="TVPN-XXXX-XXXX-XXXX"
+        android:hint="CPVPN-XXXX-XXXX-XXXX"
         android:imeOptions="actionDone"
         android:inputType="textCapCharacters|textNoSuggestions"
         android:letterSpacing="0.06"

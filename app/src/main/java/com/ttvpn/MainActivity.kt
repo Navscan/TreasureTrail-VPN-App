@@ -547,10 +547,35 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 if (!ConfigStore.hasConfig(this)) {
-                    EventLog.write(this, "EVENT", "Connect tapped")
-                    showVoucherDialog(null)
+                    EventLog.write(this, "INFO", "Provisioning VPN config...")
+                    btnToggle.isEnabled = false
+                    
+                    executor.execute {
+                        val result = ApiClient.provisionConfig(token)
+                        handler.post {
+                            btnToggle.isEnabled = true
+                            when (result) {
+                                is RegisterResult.Success -> {
+                                    ConfigStore.saveConfig(this, result.config, result.assignedIp, null)
+                                    EventLog.write(this, "OK", "VPN config provisioned")
+                                    pendingStart = true
+                                    requestConsentThenStart()
+                                    refreshUi()
+                                }
+                                is RegisterResult.Failure -> {
+                                    EventLog.write(this, "ERR", "Provision failed: ${result.reason}")
+                                    showErrorDialog("Failed to get VPN config: ${result.reason}")
+                                }
+                                RegisterResult.NetworkError -> {
+                                    EventLog.write(this, "ERR", "Provision network error")
+                                    showErrorDialog("Network error. Could not reach backend.")
+                                }
+                            }
+                        }
+                    }
                     return@post
                 }
+                
                 if (ConfigStore.isVpnRunning(this)) {
                     if (ConfigStore.isLockEnabled(this)) {
                         showLockedDialog()
@@ -832,7 +857,7 @@ class MainActivity : AppCompatActivity() {
                     subtext = getString(R.string.substate_not_setup),
                     wordColour = R.color.muted_label,
                     dotColour = R.color.state_red,
-                    buttonText = getString(R.string.action_enter_voucher)
+                    buttonText = getString(R.string.action_connect)
                 )
                 cardMeta.visibility = View.GONE
             }
