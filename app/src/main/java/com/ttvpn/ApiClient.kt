@@ -36,7 +36,7 @@ object ApiClient {
                 RegisterResult.Failure(json.optString("reason", "unknown"))
             }
         } catch (e: Exception) {
-            RegisterResult.NetworkError
+            RegisterResult.Failure(e.message ?: "Parse error")
         }
     }
 
@@ -68,13 +68,13 @@ object ApiClient {
                         subscriptionExpiresAt = null
                     )
                 } else {
-                    RegisterResult.Failure(json.optString("error", "unknown"))
+                    RegisterResult.Failure(json.optString("error", "unknown backend error"))
                 }
             } else {
-                RegisterResult.NetworkError
+                RegisterResult.Failure("HTTP $code: $response")
             }
         } catch (e: Exception) {
-            RegisterResult.NetworkError
+            RegisterResult.Failure(e.message ?: "Unknown network exception")
         }
     }
 
