@@ -114,7 +114,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        
+
         if (ConfigStore.getAuthToken(this) == null) {
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
@@ -155,7 +155,7 @@ class MainActivity : AppCompatActivity() {
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnUpgrade.setOnClickListener { showUpgradeDialog() }
-        btnExit.setOnClickListener { 
+        btnExit.setOnClickListener {
             ConfigStore.clearAuth(this)
             startActivity(Intent(this, LoginActivity::class.java))
             finish()
@@ -221,7 +221,7 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         handler.post(pollRunnable)
         maybeCheckForUpdate()
-        
+
         if (awaitingPayment) {
             awaitingPayment = false
             checkLicenseAndRefresh()
@@ -605,7 +605,7 @@ class MainActivity : AppCompatActivity() {
                 if (!ConfigStore.hasConfig(this)) {
                     EventLog.write(this, "INFO", "Provisioning VPN config...")
                     btnToggle.isEnabled = false
-                    
+
                     executor.execute {
                         val provResult = ApiClient.provisionConfig(token)
                         handler.post {
@@ -631,7 +631,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     return@post
                 }
-                
+
                 if (ConfigStore.isVpnRunning(this)) {
                     if (ConfigStore.isLockEnabled(this)) {
                         showLockedDialog()
@@ -771,7 +771,7 @@ class MainActivity : AppCompatActivity() {
             .create()
 
         btnCancel.setOnClickListener { dialog.dismiss() }
-
+        
         btnSubmit.setOnClickListener {
             val code = editVoucher.text.toString().trim()
             if (!isVoucherComplete(code)) {
@@ -855,8 +855,7 @@ class MainActivity : AppCompatActivity() {
         val body = if (clean.startsWith("CPVPN")) clean.substring(5) else if (clean.startsWith("TVPN")) clean.substring(4) else clean
         val trimmed = body.take(12)
         val parts = trimmed.chunked(4)
-        return if (parts.isEmpty()) "CPVPN-"
-        else "CPVPN-" + parts.joinToString("-")
+        return if (parts.isEmpty()) "CPVPN-" else "CPVPN-" + parts.joinToString("-")
     }
 
     private fun isVoucherComplete(code: String): Boolean {
@@ -903,7 +902,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             cardUpgrade.visibility = View.GONE
         }
-
+        
         if (tier == "enterprise" && hasConfig) {
             cardCerberus.visibility = View.VISIBLE
         } else {
@@ -944,6 +943,7 @@ class MainActivity : AppCompatActivity() {
             running -> {
                 val networkType = Stats.networkType
                 val networkPresent = networkType != "NONE"
+
                 if (networkPresent) {
                     val sub = when (networkType) {
                         "WIFI" -> getString(R.string.substate_secured_wifi)
@@ -994,7 +994,10 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateMeta(running: Boolean) {
-        txtEndpoint.text = "${Config.WG_SERVER_FLAG}  ${Config.WG_ENDPOINT_DISPLAY}"
+        // DYNAMIC ENDPOINT UPDATE:
+        val displayFlag = ConfigStore.getServerFlag(this)
+        val displayEndpoint = ConfigStore.getEndpoint(this)
+        txtEndpoint.text = "$displayFlag  $displayEndpoint"
 
         if (running) {
             val startedAt = ConfigStore.getTunnelStartedAt(this)

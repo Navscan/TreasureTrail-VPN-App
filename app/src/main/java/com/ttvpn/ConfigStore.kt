@@ -34,11 +34,31 @@ object ConfigStore {
         assignedIp: String,
         subscriptionExpiresAt: String?
     ) {
+        // Parse endpoint dynamically from the .conf file
+        var endpoint = Config.WG_ENDPOINT_DISPLAY
+        var flag = Config.WG_SERVER_FLAG
+        var country = Config.WG_SERVER_COUNTRY
+
+        wgConfig.lines().forEach { line ->
+            if (line.trimStart().startsWith("Endpoint") && line.contains("=")) {
+                endpoint = line.substringAfter("=").trim()
+                // Simple logic: if it's not the SA IP, assume it's the Premium EU server.
+                // We can expand this map as more servers are added.
+                if (endpoint != "154.66.198.207:51820") {
+                    flag = "🇪🇺"
+                    country = "Europe"
+                }
+            }
+        }
+
         prefs(context).edit()
             .putString(Config.PREF_WG_CONFIG, wgConfig)
             .putString(Config.PREF_WG_CONFIG_ORIGINAL, wgConfig)
             .putString(Config.PREF_ASSIGNED_IP, assignedIp)
             .putString(Config.PREF_SUBSCRIPTION_EXPIRES, subscriptionExpiresAt)
+            .putString(Config.PREF_WG_ENDPOINT, endpoint)
+            .putString(Config.PREF_WG_SERVER_FLAG, flag)
+            .putString(Config.PREF_WG_SERVER_COUNTRY, country)
             .putLong(Config.PREF_CONFIGURED_AT, System.currentTimeMillis())
             .remove(Config.PREF_CUSTOM_DNS)
             .apply()
@@ -55,6 +75,16 @@ object ConfigStore {
 
     fun getSubscriptionExpiresAt(context: Context): String? =
         prefs(context).getString(Config.PREF_SUBSCRIPTION_EXPIRES, null)
+
+    // New dynamic getters
+    fun getEndpoint(context: Context): String =
+        prefs(context).getString(Config.PREF_WG_ENDPOINT, Config.WG_ENDPOINT_DISPLAY) ?: Config.WG_ENDPOINT_DISPLAY
+
+    fun getServerFlag(context: Context): String =
+        prefs(context).getString(Config.PREF_WG_SERVER_FLAG, Config.WG_SERVER_FLAG) ?: Config.WG_SERVER_FLAG
+
+    fun getServerCountry(context: Context): String =
+        prefs(context).getString(Config.PREF_WG_SERVER_COUNTRY, Config.WG_SERVER_COUNTRY) ?: Config.WG_SERVER_COUNTRY
 
     fun hasConfig(context: Context): Boolean = getConfig(context) != null
 

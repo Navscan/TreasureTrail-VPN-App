@@ -13,6 +13,7 @@ object Config {
     const val ENDPOINT_PROVISION = "$BASE_URL/api/config/provision"
     const val ENDPOINT_PAY_INITIATE = "$BASE_URL/api/pay/initiate"
 
+    // Default Fallbacks
     const val WG_ENDPOINT_DISPLAY = "154.66.198.207:51820"
     const val WG_SERVER_FLAG = "🇿🇦"
     const val WG_SERVER_COUNTRY = "South Africa"
@@ -25,6 +26,7 @@ object Config {
     const val PREF_AUTH_TOKEN = "auth_token"
     const val PREF_USER_TIER = "user_tier"
 
+    // VPN Config Keys
     const val PREF_WG_CONFIG = "wg_config"
     const val PREF_WG_CONFIG_ORIGINAL = "wg_config_original"
     const val PREF_ASSIGNED_IP = "assigned_ip"
@@ -35,6 +37,11 @@ object Config {
     const val PREF_LOCK_ENABLED = "lock_enabled"
     const val PREF_CUSTOM_DNS = "custom_dns"
     
+    // Dynamic Server Keys (NEW)
+    const val PREF_WG_ENDPOINT = "wg_endpoint"
+    const val PREF_WG_SERVER_FLAG = "wg_server_flag"
+    const val PREF_WG_SERVER_COUNTRY = "wg_server_country"
+
     const val TUNNEL_NAME = "CPVPN"
     const val NOTIFICATION_CHANNEL_ID = "vpn"
     const val NOTIFICATION_ID = 1
