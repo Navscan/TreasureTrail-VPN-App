@@ -3,10 +3,31 @@ package com.ttvpn
 import android.content.Context
 
 object ConfigStore {
-
     private fun prefs(context: Context) =
         context.getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
 
+    // --- Auth ---
+    fun saveAuth(context: Context, token: String, tier: String) {
+        prefs(context).edit()
+            .putString(Config.PREF_AUTH_TOKEN, token)
+            .putString(Config.PREF_USER_TIER, tier)
+            .apply()
+    }
+
+    fun getAuthToken(context: Context): String? =
+        prefs(context).getString(Config.PREF_AUTH_TOKEN, null)
+
+    fun getUserTier(context: Context): String =
+        prefs(context).getString(Config.PREF_USER_TIER, "free") ?: "free"
+
+    fun clearAuth(context: Context) {
+        prefs(context).edit()
+            .remove(Config.PREF_AUTH_TOKEN)
+            .remove(Config.PREF_USER_TIER)
+            .apply()
+    }
+
+    // --- VPN Config ---
     fun saveConfig(
         context: Context,
         wgConfig: String,
@@ -64,23 +85,11 @@ object ConfigStore {
     fun hasCustomDns(context: Context): Boolean =
         !getCustomDns(context).isNullOrBlank()
 
-    /**
-     * Set (or clear) the custom DNS override. Rewrites the stored WireGuard
-     * config in place. Returns true on success.
-     *
-     * - If [dns] is null or blank, restores the original server-issued config
-     *   and clears the custom DNS preference.
-     * - Otherwise, rewrites the DNS line in the original config with [dns].
-     */
     fun setCustomDns(context: Context, dns: String?): Boolean {
-        val original = getOriginalConfig(context)
-            ?: getConfig(context)
-            ?: return false
+        val original = getOriginalConfig(context) ?: getConfig(context) ?: return false
 
         if (getOriginalConfig(context) == null) {
-            prefs(context).edit()
-                .putString(Config.PREF_WG_CONFIG_ORIGINAL, original)
-                .apply()
+            prefs(context).edit().putString(Config.PREF_WG_CONFIG_ORIGINAL, original).apply()
         }
 
         val normalised = dns?.trim()?.takeIf { it.isNotEmpty() }
@@ -93,10 +102,7 @@ object ConfigStore {
             rewriteDns(original, normalised)
         }
 
-        prefs(context).edit()
-            .putString(Config.PREF_WG_CONFIG, newConfig)
-            .apply()
-
+        prefs(context).edit().putString(Config.PREF_WG_CONFIG, newConfig).apply()
         return true
     }
 
@@ -114,9 +120,7 @@ object ConfigStore {
         }
 
         if (!replaced) {
-            val addrIndex = lines.indexOfFirst {
-                it.trimStart().startsWith("Address") && it.contains("=")
-            }
+            val addrIndex = lines.indexOfFirst { it.trimStart().startsWith("Address") && it.contains("=") }
             if (addrIndex >= 0) {
                 lines.add(addrIndex + 1, "DNS = $dns")
             } else {

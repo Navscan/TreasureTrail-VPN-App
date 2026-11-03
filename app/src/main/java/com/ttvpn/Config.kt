@@ -6,6 +6,11 @@ object Config {
     const val ENDPOINT_HEALTH = "$BASE_URL/api/health"
     const val ENDPOINT_CERBERUS = "https://api.flipstack.store/api/cerberus/status"
 
+    // SaaS Auth Endpoints
+    const val ENDPOINT_AUTH_LOGIN = "$BASE_URL/api/auth/login"
+    const val ENDPOINT_AUTH_REGISTER = "$BASE_URL/api/auth/register"
+    const val ENDPOINT_LICENSE_CHECK = "$BASE_URL/api/license/check"
+
     const val WG_ENDPOINT_DISPLAY = "154.66.198.207:51820"
     const val WG_SERVER_FLAG = "🇿🇦"
     const val WG_SERVER_COUNTRY = "South Africa"
@@ -13,6 +18,11 @@ object Config {
     const val HTTP_CONNECT_TIMEOUT_MS = 10_000
     const val HTTP_READ_TIMEOUT_MS = 20_000
     const val PREFS_NAME = "ttvpn_prefs"
+    
+    // Auth Keys
+    const val PREF_AUTH_TOKEN = "auth_token"
+    const val PREF_USER_TIER = "user_tier"
+
     const val PREF_WG_CONFIG = "wg_config"
     const val PREF_WG_CONFIG_ORIGINAL = "wg_config_original"
     const val PREF_ASSIGNED_IP = "assigned_ip"
@@ -47,4 +57,3 @@ object Config {
     const val PREF_EVENT_LOG = "event_log"
     const val LOG_MAX_ENTRIES = 200
 }
-

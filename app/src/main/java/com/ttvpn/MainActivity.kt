@@ -110,6 +110,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        if (ConfigStore.getAuthToken(this) == null) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_main)
 
         btnToggle = findViewById(R.id.btnToggle)
@@ -140,7 +147,11 @@ class MainActivity : AppCompatActivity() {
         cerberusThreatFeed = findViewById(R.id.cerberusThreatFeed)
 
         btnToggle.setOnClickListener { onToggleTapped() }
-        btnExit.setOnClickListener { onExitTapped() }
+        btnExit.setOnClickListener { 
+            ConfigStore.clearAuth(this)
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
+        }
         btnUpdateReady.setOnClickListener { onUpdateReadyTapped() }
         btnCerberusRefresh.setOnClickListener { refreshCerberus() }
 
@@ -203,9 +214,8 @@ class MainActivity : AppCompatActivity() {
         handler.post(pollRunnable)
         maybeCheckForUpdate()
         
-        // TODO: Replace "enterprise" with real check from ConfigStore when backend supports tiering
-        // For now, we show it only if config exists (simulating a logged-in state)
-        if (ConfigStore.hasConfig(this)) {
+        val tier = ConfigStore.getUserTier(this)
+        if (tier == "enterprise" && ConfigStore.hasConfig(this)) {
             cardCerberus.visibility = View.VISIBLE
             refreshCerberus()
         } else {
@@ -407,21 +417,9 @@ class MainActivity : AppCompatActivity() {
         val wordColor = ContextCompat.getColor(
             this, if (enabled) R.color.brand_teal else R.color.state_red
         )
-        sp.setSpan(
-            ForegroundColorSpan(labelColor),
-            0, label.length,
-            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
-        sp.setSpan(
-            ForegroundColorSpan(wordColor),
-            label.length, full.length,
-            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
-        sp.setSpan(
-            StyleSpan(Typeface.BOLD),
-            label.length, full.length,
-            Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
-        )
+        sp.setSpan(ForegroundColorSpan(labelColor), 0, label.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sp.setSpan(ForegroundColorSpan(wordColor), label.length, full.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        sp.setSpan(StyleSpan(Typeface.BOLD), label.length, full.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         txtLoggingState.text = sp
     }
 
@@ -446,7 +444,6 @@ class MainActivity : AppCompatActivity() {
 
         val density = resources.displayMetrics.density
         val padV = (3 * density).toInt()
-
         logEntriesContainer.removeAllViews()
 
         if (entries.isEmpty()) {
@@ -470,23 +467,15 @@ class MainActivity : AppCompatActivity() {
                     setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
                     typeface = Typeface.MONOSPACE
                     textSize = 10f
-                    layoutParams = LinearLayout.LayoutParams(
-                        (60 * density).toInt(),
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
+                    layoutParams = LinearLayout.LayoutParams((60 * density).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
                 }
 
                 val tag = TextView(this).apply {
                     text = entry.tag
-                    setTextColor(
-                        ContextCompat.getColor(this@MainActivity, tagColourFor(entry.tag))
-                    )
+                    setTextColor(ContextCompat.getColor(this@MainActivity, tagColourFor(entry.tag)))
                     typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
                     textSize = 10f
-                    layoutParams = LinearLayout.LayoutParams(
-                        (48 * density).toInt(),
-                        LinearLayout.LayoutParams.WRAP_CONTENT
-                    )
+                    layoutParams = LinearLayout.LayoutParams((48 * density).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
                 }
 
                 val msg = TextView(this).apply {
@@ -496,11 +485,7 @@ class MainActivity : AppCompatActivity() {
                     textSize = 11f
                     ellipsize = TextUtils.TruncateAt.END
                     maxLines = 2
-                    layoutParams = LinearLayout.LayoutParams(
-                        0,
-                        LinearLayout.LayoutParams.WRAP_CONTENT,
-                        1f
-                    )
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 }
 
                 row.addView(time)
@@ -510,13 +495,8 @@ class MainActivity : AppCompatActivity() {
 
                 if (index < entries.size - 1) {
                     val divider = View(this).apply {
-                        layoutParams = LinearLayout.LayoutParams(
-                            LinearLayout.LayoutParams.MATCH_PARENT,
-                            1
-                        )
-                        setBackgroundColor(
-                            ContextCompat.getColor(this@MainActivity, R.color.border_inner)
-                        )
+                        layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
+                        setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.border_inner))
                     }
                     logEntriesContainer.addView(divider)
                 }
@@ -547,22 +527,43 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onToggleTapped() {
-        if (!ConfigStore.hasConfig(this)) {
-            EventLog.write(this, "EVENT", "Connect tapped")
-            showVoucherDialog(null)
+        val token = ConfigStore.getAuthToken(this)
+        if (token == null) {
+            startActivity(Intent(this, LoginActivity::class.java))
+            finish()
             return
         }
-        if (ConfigStore.isVpnRunning(this)) {
-            if (ConfigStore.isLockEnabled(this)) {
-                showLockedDialog()
-                return
+
+        executor.execute {
+            val isActive = AuthClient.checkLicense(token)
+            handler.post {
+                if (!isActive) {
+                    AlertDialog.Builder(this)
+                        .setTitle("Subscription Inactive")
+                        .setMessage("Your subscription is not active. Please upgrade to Pro or Enterprise.")
+                        .setPositiveButton("OK", null)
+                        .show()
+                    return@post
+                }
+
+                if (!ConfigStore.hasConfig(this)) {
+                    EventLog.write(this, "EVENT", "Connect tapped")
+                    showVoucherDialog(null)
+                    return@post
+                }
+                if (ConfigStore.isVpnRunning(this)) {
+                    if (ConfigStore.isLockEnabled(this)) {
+                        showLockedDialog()
+                        return@post
+                    }
+                    EventLog.write(this, "EVENT", "Disconnect tapped")
+                    stopVpnService()
+                } else {
+                    EventLog.write(this, "EVENT", "Connect tapped")
+                    pendingStart = true
+                    requestConsentThenStart()
+                }
             }
-            EventLog.write(this, "EVENT", "Disconnect tapped")
-            stopVpnService()
-        } else {
-            EventLog.write(this, "EVENT", "Connect tapped")
-            pendingStart = true
-            requestConsentThenStart()
         }
     }
 
@@ -584,10 +585,6 @@ class MainActivity : AppCompatActivity() {
         VpnService.stop(this)
     }
 
-    private fun onExitTapped() {
-        finishAndRemoveTask()
-    }
-
     private fun showLockedDialog() {
         AlertDialog.Builder(this)
             .setTitle(R.string.dialog_locked_title)
@@ -599,7 +596,6 @@ class MainActivity : AppCompatActivity() {
     private fun showDnsDialog() {
         val density = resources.displayMetrics.density
         val pad = (24 * density).toInt()
-
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(pad, pad / 2, pad, 0)
@@ -648,15 +644,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyDns(dns: String?) {
         val wasRunning = ConfigStore.isVpnRunning(this)
+        if (!ConfigStore.setCustomDns(this, dns)) return
 
-        if (!ConfigStore.setCustomDns(this, dns)) {
-            return
-        }
-
-        EventLog.write(
-            this, "EVENT",
-            if (dns.isNullOrBlank()) "DNS reset" else "DNS set to $dns"
-        )
+        EventLog.write(this, "EVENT", if (dns.isNullOrBlank()) "DNS reset" else "DNS set to $dns")
 
         if (wasRunning) {
             VpnService.stop(this)
@@ -665,7 +655,6 @@ class MainActivity : AppCompatActivity() {
                 requestConsentThenStart()
             }, Config.DNS_RESTART_DELAY_MS)
         }
-
         refreshUi()
     }
 
@@ -723,12 +712,7 @@ class MainActivity : AppCompatActivity() {
                     btnCancel.isEnabled = true
                     when (result) {
                         is RegisterResult.Success -> {
-                            ConfigStore.saveConfig(
-                                this,
-                                result.config,
-                                result.assignedIp,
-                                result.subscriptionExpiresAt
-                            )
+                            ConfigStore.saveConfig(this, result.config, result.assignedIp, result.subscriptionExpiresAt)
                             EventLog.write(this, "OK", "Voucher accepted")
                             dialog.dismiss()
                             pendingStart = true
@@ -749,24 +733,17 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-
         dialog.show()
     }
 
     private fun registerWithCode(code: String) {
         if (!isVoucherComplete(code)) return
-
         executor.execute {
             val result = ApiClient.register(code)
             handler.post {
                 when (result) {
                     is RegisterResult.Success -> {
-                        ConfigStore.saveConfig(
-                            this,
-                            result.config,
-                            result.assignedIp,
-                            result.subscriptionExpiresAt
-                        )
+                        ConfigStore.saveConfig(this, result.config, result.assignedIp, result.subscriptionExpiresAt)
                         EventLog.write(this, "OK", "Voucher accepted")
                         pendingStart = true
                         requestConsentThenStart()
@@ -846,8 +823,7 @@ class MainActivity : AppCompatActivity() {
         renderLogPanel()
 
         val lockPrefix = if (lockOn) getString(R.string.lock_prefix) else ""
-        val dnsSuffix = if (!customDns.isNullOrBlank())
-            getString(R.string.substate_dns_suffix, customDns) else ""
+        val dnsSuffix = if (!customDns.isNullOrBlank()) getString(R.string.substate_dns_suffix, customDns) else ""
 
         when {
             !hasConfig -> {
@@ -874,7 +850,6 @@ class MainActivity : AppCompatActivity() {
             running -> {
                 val networkType = Stats.networkType
                 val networkPresent = networkType != "NONE"
-
                 if (networkPresent) {
                     val sub = when (networkType) {
                         "WIFI" -> getString(R.string.substate_secured_wifi)
@@ -915,19 +890,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyState(
-        text: String,
-        subtext: String,
-        wordColour: Int,
-        dotColour: Int,
-        buttonText: String
-    ) {
-        val wordC = ContextCompat.getColor(this, wordColour)
-        val dotC = ContextCompat.getColor(this, dotColour)
+    private fun applyState(text: String, subtext: String, wordColour: Int, dotColour: Int, buttonText: String) {
         txtState.text = text
-        txtState.setTextColor(wordC)
+        txtState.setTextColor(ContextCompat.getColor(this, wordColour))
         txtSubstate.text = subtext
-        dotStatus.background?.setTint(dotC)
+        dotStatus.background?.setTint(ContextCompat.getColor(this, dotColour))
         btnToggle.text = buttonText
         btnToggle.isEnabled = true
     }
@@ -937,11 +904,7 @@ class MainActivity : AppCompatActivity() {
 
         if (running) {
             val startedAt = ConfigStore.getTunnelStartedAt(this)
-            txtDuration.text = if (startedAt > 0L) {
-                formatDuration(System.currentTimeMillis() - startedAt)
-            } else {
-                getString(R.string.duration_placeholder)
-            }
+            txtDuration.text = if (startedAt > 0L) formatDuration(System.currentTimeMillis() - startedAt) else getString(R.string.duration_placeholder)
             txtData.text = formatData(Stats.rx, Stats.tx)
         } else {
             txtDuration.text = getString(R.string.duration_placeholder)
@@ -974,9 +937,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun requestNotificationPermissionIfNeeded() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val granted = ContextCompat.checkSelfPermission(
-                this, Manifest.permission.POST_NOTIFICATIONS
-            ) == PackageManager.PERMISSION_GRANTED
+            val granted = ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
             if (!granted) {
                 notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }

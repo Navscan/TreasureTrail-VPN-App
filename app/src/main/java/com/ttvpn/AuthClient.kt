@@ -1,0 +1,84 @@
+package com.ttvpn
+
+import org.json.JSONObject
+import java.io.BufferedReader
+import java.net.HttpURLConnection
+import java.net.URL
+
+sealed class AuthResult {
+    data class Success(val token: String, val tier: String) : AuthResult()
+    data class Failure(val error: String) : AuthResult()
+    object NetworkError : AuthResult()
+}
+
+object AuthClient {
+
+    fun login(email: String, password: String): AuthResult {
+        val body = JSONObject().put("email", email).put("password", password).toString()
+        return postAuth(Config.ENDPOINT_AUTH_LOGIN, body)
+    }
+
+    fun register(email: String, password: String): AuthResult {
+        val body = JSONObject().put("email", email).put("password", password).toString()
+        return postAuth(Config.ENDPOINT_AUTH_REGISTER, body)
+    }
+
+    fun checkLicense(token: String): Boolean {
+        return try {
+            val url = URL(Config.ENDPOINT_LICENSE_CHECK)
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                setRequestProperty("Authorization", "Bearer $token")
+                connectTimeout = Config.HTTP_CONNECT_TIMEOUT_MS
+                readTimeout = Config.HTTP_READ_TIMEOUT_MS
+            }
+            
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val response = stream?.bufferedReader()?.use(BufferedReader::readText).orEmpty()
+            conn.disconnect()
+
+            if (code == 200) {
+                val json = JSONObject(response)
+                json.optBoolean("ok", false) && json.optBoolean("is_active", false)
+            } else {
+                false
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun postAuth(endpoint: String, body: String): AuthResult {
+        return try {
+            val url = URL(endpoint)
+            val conn = (url.openConnection() as HttpURLConnection).apply {
+                requestMethod = "POST"
+                doOutput = true
+                connectTimeout = Config.HTTP_CONNECT_TIMEOUT_MS
+                readTimeout = Config.HTTP_READ_TIMEOUT_MS
+                setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                setRequestProperty("Accept", "application/json")
+            }
+            conn.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+
+            val code = conn.responseCode
+            val stream = if (code in 200..299) conn.inputStream else conn.errorStream
+            val response = stream?.bufferedReader()?.use(BufferedReader::readText).orEmpty()
+            conn.disconnect()
+
+            val json = JSONObject(response)
+
+            if (code in 200..299 && json.optBoolean("ok", false)) {
+                val token = json.getString("token")
+                val tier = json.optString("tier", "free")
+                AuthResult.Success(token, tier)
+            } else {
+                val error = json.optString("error", "unknown_error")
+                AuthResult.Failure(error)
+            }
+        } catch (e: Exception) {
+            AuthResult.NetworkError
+        }
+    }
+}
