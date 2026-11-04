@@ -784,6 +784,7 @@ class MainActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
+            val token = ConfigStore.getAuthToken(this) ?: return@setOnClickListener
             EventLog.write(this, "EVENT", "Voucher submitted  ${EventLog.maskVoucher(code)}")
 
             btnSubmit.isEnabled = false
@@ -791,28 +792,57 @@ class MainActivity : AppCompatActivity() {
             txtError.visibility = View.GONE
 
             executor.execute {
-                val result = ApiClient.register(code)
+                val voucherResult = ApiClient.redeemVoucher(token, code)
                 handler.post {
-                    btnSubmit.isEnabled = true
-                    btnCancel.isEnabled = true
-                    when (result) {
+                    when (voucherResult) {
                         is RegisterResult.Success -> {
-                            ConfigStore.saveConfig(this, result.config, result.assignedIp, result.subscriptionExpiresAt)
                             EventLog.write(this, "OK", "Voucher accepted")
-                            dialog.dismiss()
-                            pendingStart = true
-                            requestConsentThenStart()
-                            refreshUi()
+                            txtError.text = "Provisioning VPN..."
+                            txtError.setTextColor(ContextCompat.getColor(this, R.color.brand_gold))
+                            txtError.visibility = View.VISIBLE
+                            
+                            executor.execute {
+                                val provResult = ApiClient.provisionConfig(token)
+                                handler.post {
+                                    btnSubmit.isEnabled = true
+                                    btnCancel.isEnabled = true
+                                    txtError.visibility = View.GONE
+                                    when (provResult) {
+                                        is RegisterResult.Success -> {
+                                            ConfigStore.saveConfig(this, provResult.config, provResult.assignedIp, voucherResult.subscriptionExpiresAt)
+                                            EventLog.write(this, "OK", "VPN config provisioned")
+                                            dialog.dismiss()
+                                            pendingStart = true
+                                            requestConsentThenStart()
+                                            refreshUi()
+                                        }
+                                        is RegisterResult.Failure -> {
+                                            EventLog.write(this, "ERR", "Provision failed: ${provResult.reason}")
+                                            txtError.text = "Voucher ok, but config failed: ${provResult.reason}"
+                                            txtError.visibility = View.VISIBLE
+                                        }
+                                        RegisterResult.NetworkError -> {
+                                            EventLog.write(this, "ERR", "Provision network error")
+                                            txtError.text = "Provision network error"
+                                            txtError.visibility = View.VISIBLE
+                                        }
+                                    }
+                                }
+                            }
                         }
                         is RegisterResult.Failure -> {
-                            EventLog.write(this, "ERR", "Voucher rejected  ${result.reason}")
-                            txtError.text = reasonToMessage(result.reason)
+                            EventLog.write(this, "ERR", "Voucher rejected  ${voucherResult.reason}")
+                            txtError.text = reasonToMessage(voucherResult.reason)
                             txtError.visibility = View.VISIBLE
+                            btnSubmit.isEnabled = true
+                            btnCancel.isEnabled = true
                         }
                         RegisterResult.NetworkError -> {
                             EventLog.write(this, "ERR", "Voucher rejected  network")
                             txtError.text = getString(R.string.error_network)
                             txtError.visibility = View.VISIBLE
+                            btnSubmit.isEnabled = true
+                            btnCancel.isEnabled = true
                         }
                     }
                 }
@@ -823,20 +853,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun registerWithCode(code: String) {
         if (!isVoucherComplete(code)) return
+        val token = ConfigStore.getAuthToken(this) ?: return
+        
         executor.execute {
-            val result = ApiClient.register(code)
+            val voucherResult = ApiClient.redeemVoucher(token, code)
             handler.post {
-                when (result) {
+                when (voucherResult) {
                     is RegisterResult.Success -> {
-                        ConfigStore.saveConfig(this, result.config, result.assignedIp, result.subscriptionExpiresAt)
                         EventLog.write(this, "OK", "Voucher accepted")
-                        pendingStart = true
-                        requestConsentThenStart()
-                        refreshUi()
+                        executor.execute {
+                            val provResult = ApiClient.provisionConfig(token)
+                            handler.post {
+                                when (provResult) {
+                                    is RegisterResult.Success -> {
+                                        ConfigStore.saveConfig(this, provResult.config, provResult.assignedIp, voucherResult.subscriptionExpiresAt)
+                                        EventLog.write(this, "OK", "VPN config provisioned")
+                                        pendingStart = true
+                                        requestConsentThenStart()
+                                        refreshUi()
+                                    }
+                                    is RegisterResult.Failure -> {
+                                        showErrorDialog("Config failed: ${provResult.reason}")
+                                    }
+                                    RegisterResult.NetworkError -> {
+                                        showErrorDialog("Provision network error")
+                                    }
+                                }
+                            }
+                        }
                     }
                     is RegisterResult.Failure -> {
-                        EventLog.write(this, "ERR", "Voucher rejected  ${result.reason}")
-                        showErrorDialog(reasonToMessage(result.reason))
+                        EventLog.write(this, "ERR", "Voucher rejected  ${voucherResult.reason}")
+                        showErrorDialog(reasonToMessage(voucherResult.reason))
                     }
                     RegisterResult.NetworkError -> {
                         EventLog.write(this, "ERR", "Voucher rejected  network")
@@ -878,9 +926,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun reasonToMessage(reason: String): String = when (reason) {
-        "voucher_not_found" -> getString(R.string.error_voucher_not_found)
-        "voucher_expired" -> getString(R.string.error_voucher_expired)
-        "voucher_used" -> getString(R.string.error_voucher_used)
+        "voucher_not_found" -> "Voucher not found."
+        "voucher_bound_to_different_user" -> "This voucher belongs to a different email."
+        "voucher_already_used" -> "This voucher has already been used."
         "subscription_inactive" -> getString(R.string.error_subscription_inactive)
         "user_not_found" -> getString(R.string.error_user_not_found)
         else -> getString(R.string.error_unknown)
