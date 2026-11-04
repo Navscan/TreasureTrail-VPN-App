@@ -57,7 +57,7 @@
         </LinearLayout>
 
         <TextView
-            android:id="@+id/btnEnterprise"
+            android:id="@+id/btnTopRightStatus"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:background="?attr/selectableItemBackground"
@@ -67,7 +67,7 @@
             android:paddingEnd="12dp"
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
-            android:text="Enterprise"
+            android:text="Open"
             android:textColor="#3a4b6b"
             android:textSize="11sp"
             android:textStyle="normal"
@@ -687,6 +687,20 @@
                 android:textColor="#8a9bb0"
                 android:textSize="10sp"
                 android:visibility="gone" />
+
+            <!-- NEW LOGOUT BUTTON (Red, non-bold, CAPS) -->
+            <TextView
+                android:id="@+id/btnLogout"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/selectableItemBackground"
+                android:clickable="true"
+                android:focusable="true"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:text="LOGOUT"
+                android:textColor="#ff6b6b"
+                android:textSize="10sp" />
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnExit"

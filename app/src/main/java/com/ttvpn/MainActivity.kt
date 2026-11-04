@@ -42,7 +42,8 @@ import java.util.concurrent.Executors
 class MainActivity : AppCompatActivity() {
 
     private lateinit var btnToggle: Button
-    private lateinit var btnExit: Button
+    private lateinit var btnExit: TextView
+    private lateinit var btnLogout: TextView
     private lateinit var checkLock: CheckBox
     private lateinit var txtState: TextView
     private lateinit var txtSubstate: TextView
@@ -60,7 +61,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtLoggingState: TextView
     private lateinit var btnClearLog: TextView
     private lateinit var chkKeepLog: CheckBox
-    private lateinit var btnEnterprise: TextView
+    private lateinit var btnTopRightStatus: TextView
 
     private lateinit var tabLogs: TextView
     private lateinit var tabThreat: TextView
@@ -124,16 +125,13 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (ConfigStore.getAuthToken(this) == null) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-            return
-        }
+        // FORCED LOGIN REMOVED. App now boots directly to MainActivity.
 
         setContentView(R.layout.activity_main)
 
         btnToggle = findViewById(R.id.btnToggle)
         btnExit = findViewById(R.id.btnExit)
+        btnLogout = findViewById(R.id.btnLogout)
         checkLock = findViewById(R.id.checkLock)
         txtState = findViewById(R.id.txtState)
         txtSubstate = findViewById(R.id.txtSubstate)
@@ -151,7 +149,7 @@ class MainActivity : AppCompatActivity() {
         txtLoggingState = findViewById(R.id.txtLoggingState)
         btnClearLog = findViewById(R.id.btnClearLog)
         chkKeepLog = findViewById(R.id.chkKeepLog)
-        btnEnterprise = findViewById(R.id.btnEnterprise)
+        btnTopRightStatus = findViewById(R.id.btnTopRightStatus)
 
         tabLogs = findViewById(R.id.tabLogs)
         tabThreat = findViewById(R.id.tabThreat)
@@ -174,16 +172,22 @@ class MainActivity : AppCompatActivity() {
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnUpgrade.setOnClickListener { showUpgradeDialog() }
-        btnEnterprise.setOnClickListener { showVoucherDialog(null) }
+        btnTopRightStatus.setOnClickListener { onTopRightTapped() }
         btnOpenThreatCentre.setOnClickListener {
             startActivity(Intent(this, ThreatCentreActivity::class.java))
         }
         
+        // EXIT APP: Closes the UI, but keeps the VPN service running in the background.
         btnExit.setOnClickListener {
-            ConfigStore.clearAuth(this)
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
+            finishAffinity() 
         }
+
+        // LOGOUT: Kills the tunnel, closes the UI, and sets the next launch to disconnected.
+        btnLogout.setOnClickListener {
+            VpnService.stop(this)
+            finishAffinity()
+        }
+
         btnUpdateReady.setOnClickListener { onUpdateReadyTapped() }
         btnCerberusRefresh.setOnClickListener { refreshCerberus() }
 
@@ -237,11 +241,28 @@ class MainActivity : AppCompatActivity() {
         EventLog.init(this)
         EventLog.write(this, "EVENT", "App opened")
         
-        // Default to Logs tab
         switchTab(false)
         refreshUi()
         txtFooterVersion.text = "v" + BuildConfig.VERSION_NAME + " ©PayBridge(Pty) Ltd 2026"
         handleIntent(intent)
+    }
+
+    private fun onTopRightTapped() {
+        val tier = ConfigStore.getUserTier(this)
+        when (tier) {
+            "enterprise" -> showVoucherDialog(null)
+            "pro" -> {
+                AlertDialog.Builder(this)
+                    .setTitle("Pro Plan Active")
+                    .setMessage("Your Pro subscription is managed via FlipStack.store. Thank you for your support!")
+                    .setPositiveButton("OK", null)
+                    .show()
+            }
+            else -> {
+                // For "free" or "open" users, tapping this should prompt them to log in if they have an Enterprise voucher.
+                startActivity(Intent(this, LoginActivity::class.java))
+            }
+        }
     }
 
     private fun switchTab(threatActive: Boolean) {
@@ -278,7 +299,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             val tier = ConfigStore.getUserTier(this)
             if (tier != "enterprise") {
-                // If user is not enterprise and was on Threat tab, kick them back to logs
                 if (isThreatTabActive) {
                     switchTab(false)
                 }
@@ -643,9 +663,29 @@ class MainActivity : AppCompatActivity() {
     private fun onToggleTapped() {
         val token = ConfigStore.getAuthToken(this)
         if (token == null) {
-            startActivity(Intent(this, LoginActivity::class.java))
-            finish()
-            return
+            // Allow Free/Pro users to connect if they have a config
+            if (ConfigStore.hasConfig(this)) {
+                if (ConfigStore.isVpnRunning(this)) {
+                    if (ConfigStore.isLockEnabled(this)) {
+                        showLockedDialog()
+                        return
+                    }
+                    EventLog.write(this, "EVENT", "Disconnect tapped")
+                    stopVpnService()
+                } else {
+                    EventLog.write(this, "EVENT", "Connect tapped")
+                    pendingStart = true
+                    requestConsentThenStart()
+                }
+                return
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle("Subscription Required")
+                    .setMessage("Please upgrade to Pro or Enterprise to provision a VPN config.")
+                    .setPositiveButton("OK", null)
+                    .show()
+                return
+            }
         }
 
         executor.execute {
@@ -988,6 +1028,13 @@ class MainActivity : AppCompatActivity() {
         val customDns = ConfigStore.getCustomDns(this)
         val tier = ConfigStore.getUserTier(this)
 
+        // Dynamic Top-Right Button
+        btnTopRightStatus.text = when (tier) {
+            "enterprise" -> "Enterprise"
+            "pro" -> "Pro"
+            else -> "Open"
+        }
+
         suppressLockChange = true
         checkLock.isChecked = lockOn
         suppressLockChange = false
@@ -999,7 +1046,6 @@ class MainActivity : AppCompatActivity() {
         }
         
         if (tier != "enterprise") {
-            // If they lost enterprise, hide the tab and kick to logs
             tabThreat.visibility = View.GONE
             if (isThreatTabActive) switchTab(false)
         } else {
