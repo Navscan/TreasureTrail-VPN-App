@@ -7,6 +7,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.graphics.Typeface
 import android.net.Uri
 import android.os.Build
@@ -18,6 +19,7 @@ import android.text.Editable
 import android.text.InputType
 import android.text.Spannable
 import android.text.SpannableString
+import android.text.SpannableStringBuilder
 import android.text.TextUtils
 import android.text.TextWatcher
 import android.text.style.ForegroundColorSpan
@@ -309,7 +311,7 @@ class MainActivity : AppCompatActivity() {
 
         btnCerberusRefresh.isEnabled = false
         txtCerberusStatus.text = "Loading…"
-        txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.muted_label))
+        txtCerberusStatus.setTextColor(Color.parseColor("#8a9bb0"))
 
         executor.execute {
             val result = CerberusClient.fetch()
@@ -319,12 +321,12 @@ class MainActivity : AppCompatActivity() {
                     is CerberusResult.Success -> renderCerberus(result.status)
                     is CerberusResult.Failure -> {
                         txtCerberusStatus.text = "Error: ${result.reason}"
-                        txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.state_red))
+                        txtCerberusStatus.setTextColor(Color.parseColor("#ff6b6b"))
                         hideCerberusDetails()
                     }
                     CerberusResult.NetworkError -> {
                         txtCerberusStatus.text = "Network error — cannot reach VPS"
-                        txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.state_red))
+                        txtCerberusStatus.setTextColor(Color.parseColor("#ff6b6b"))
                         hideCerberusDetails()
                     }
                 }
@@ -342,28 +344,35 @@ class MainActivity : AppCompatActivity() {
     private fun renderCerberus(s: CerberusStatus) {
         val jailCount = s.jails.size
         txtCerberusStatus.text = "LIVE · $jailCount jail${if (jailCount == 1) "" else "s"} monitored"
-        txtCerberusStatus.setTextColor(ContextCompat.getColor(this, R.color.brand_teal))
+        txtCerberusStatus.setTextColor(Color.parseColor("#4cd9b2"))
 
-        val sb = StringBuilder()
-        sb.append("Uptime   ").append(formatUptimeHuman(s.uptimeSeconds)).append('\n')
-        sb.append("Mem      ").append(s.memPercent).append("%   ")
-            .append(formatBytes(s.memUsedBytes)).append(" / ").append(formatBytes(s.memTotalBytes)).append('\n')
-        sb.append("Disk     ").append(s.diskPercent).append("%   ")
-            .append(formatBytes(s.diskUsedBytes)).append(" / ").append(formatBytes(s.diskTotalBytes)).append('\n')
-        sb.append("Fail2ban ").append(s.bannedTotal).append(" banned across ")
-            .append(jailCount).append(" jail").append(if (jailCount == 1) "" else "s").append('\n')
-        if (s.failedServices.isEmpty()) {
-            sb.append("Failed   none")
-        } else {
-            sb.append("Failed   ").append(s.failedServices.joinToString(", "))
+        val sb = SpannableStringBuilder()
+        
+        // Helper to append styled text
+        fun appendLine(label: String, value: String) {
+            val start = sb.length
+            sb.append(label.padEnd(9))
+            sb.setSpan(ForegroundColorSpan(Color.parseColor("#8a9bb0")), start, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            
+            val valStart = sb.length
+            sb.append(value)
+            sb.setSpan(ForegroundColorSpan(Color.parseColor("#4cd9b2")), valStart, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+            
+            sb.append("\n")
         }
-        txtCerberusVitals.text = sb.toString()
-        txtCerberusVitals.setTextColor(
-            ContextCompat.getColor(
-                this,
-                if (s.failedServices.isEmpty() && s.bannedTotal == 0) R.color.text_main else R.color.state_amber
-            )
-        )
+
+        appendLine("Uptime", formatUptimeHuman(s.uptimeSeconds))
+        appendLine("Mem", "${s.memPercent}%  ${formatBytes(s.memUsedBytes)} / ${formatBytes(s.memTotalBytes)}")
+        appendLine("Disk", "${s.diskPercent}%  ${formatBytes(s.diskUsedBytes)} / ${formatBytes(s.diskTotalBytes)}")
+        appendLine("Fail2ban", "${s.bannedTotal} banned across $jailCount jail${if (jailCount == 1) "" else "s"}")
+        
+        if (s.failedServices.isEmpty()) {
+            appendLine("Failed", "none")
+        } else {
+            appendLine("Failed", s.failedServices.joinToString(", "))
+        }
+
+        txtCerberusVitals.text = sb
         txtCerberusVitals.visibility = View.VISIBLE
 
         cerberusThreatFeed.removeAllViews()
@@ -373,7 +382,7 @@ class MainActivity : AppCompatActivity() {
         if (s.recentBanned.isEmpty()) {
             val tv = TextView(this).apply {
                 text = "No active bans"
-                setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+                setTextColor(Color.parseColor("#8a9bb0"))
                 typeface = Typeface.create(Typeface.MONOSPACE, Typeface.ITALIC)
                 textSize = 10f
             }
@@ -382,7 +391,7 @@ class MainActivity : AppCompatActivity() {
             s.recentBanned.take(10).forEach { b ->
                 val tv = TextView(this).apply {
                     text = "${b.ip}   [${b.jail}]"
-                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.state_amber))
+                    setTextColor(Color.parseColor("#ff6b6b"))
                     typeface = Typeface.MONOSPACE
                     textSize = 10f
                     setPadding(0, 2, 0, 2)
@@ -391,7 +400,6 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        // Show the button ONLY when the dashboard is successfully loaded
         btnOpenCommandCenter.visibility = View.VISIBLE
     }
 
@@ -482,10 +490,9 @@ class MainActivity : AppCompatActivity() {
         val word = if (enabled) "ON" else "OFF"
         val full = label + word
         val sp = SpannableString(full)
-        val labelColor = ContextCompat.getColor(this, R.color.muted_label)
-        val wordColor = ContextCompat.getColor(
-            this, if (enabled) R.color.brand_teal else R.color.state_red
-        )
+        val labelColor = Color.parseColor("#8a9bb0")
+        val wordColor = Color.parseColor(if (enabled) "#4cd9b2" else "#ff6b6b")
+        
         sp.setSpan(ForegroundColorSpan(labelColor), 0, label.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         sp.setSpan(ForegroundColorSpan(wordColor), label.length, full.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         sp.setSpan(StyleSpan(Typeface.BOLD), label.length, full.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -498,11 +505,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun tagColourFor(tag: String): Int = when (tag) {
-        "OK" -> R.color.brand_teal
-        "INFO" -> R.color.info_blue
-        "WARN" -> R.color.state_amber
-        "ERR" -> R.color.state_red
-        else -> R.color.text_dim
+        "OK" -> Color.parseColor("#4cd9b2")
+        "INFO" -> Color.parseColor("#6bc9ff")
+        "WARN" -> Color.parseColor("#f5b342")
+        "ERR" -> Color.parseColor("#ff6b6b")
+        else -> Color.parseColor("#8a9bb0")
     }
 
     private fun renderLogPanel(force: Boolean = false) {
@@ -517,8 +524,8 @@ class MainActivity : AppCompatActivity() {
 
         if (entries.isEmpty()) {
             val empty = TextView(this).apply {
-                text = getString(R.string.dialog_logs_empty)
-                setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+                text = "No events logged"
+                setTextColor(Color.parseColor("#8a9bb0"))
                 textSize = 11f
                 typeface = Typeface.create(Typeface.MONOSPACE, Typeface.ITALIC)
                 setPadding(0, padV, 0, padV)
@@ -533,7 +540,7 @@ class MainActivity : AppCompatActivity() {
 
                 val time = TextView(this).apply {
                     text = entry.timestamp
-                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+                    setTextColor(Color.parseColor("#5a6f82"))
                     typeface = Typeface.MONOSPACE
                     textSize = 10f
                     layoutParams = LinearLayout.LayoutParams((60 * density).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -541,7 +548,7 @@ class MainActivity : AppCompatActivity() {
 
                 val tag = TextView(this).apply {
                     text = entry.tag
-                    setTextColor(ContextCompat.getColor(this@MainActivity, tagColourFor(entry.tag)))
+                    setTextColor(tagColourFor(entry.tag))
                     typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
                     textSize = 10f
                     layoutParams = LinearLayout.LayoutParams((48 * density).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
@@ -549,7 +556,7 @@ class MainActivity : AppCompatActivity() {
 
                 val msg = TextView(this).apply {
                     text = entry.message
-                    setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_dim))
+                    setTextColor(Color.parseColor("#c8d0e0"))
                     typeface = Typeface.MONOSPACE
                     textSize = 11f
                     ellipsize = TextUtils.TruncateAt.END
@@ -565,7 +572,7 @@ class MainActivity : AppCompatActivity() {
                 if (index < entries.size - 1) {
                     val divider = View(this).apply {
                         layoutParams = LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, 1)
-                        setBackgroundColor(ContextCompat.getColor(this@MainActivity, R.color.border_inner))
+                        setBackgroundColor(Color.parseColor("#1e2d3d"))
                     }
                     logEntriesContainer.addView(divider)
                 }
@@ -681,9 +688,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun showLockedDialog() {
         AlertDialog.Builder(this)
-            .setTitle(R.string.dialog_locked_title)
-            .setMessage(R.string.dialog_locked_message)
-            .setPositiveButton(R.string.dialog_locked_ok, null)
+            .setTitle("VPN Locked")
+            .setMessage("Disable the VPN lock first to disconnect.")
+            .setPositiveButton("OK", null)
             .show()
     }
 
@@ -696,43 +703,35 @@ class MainActivity : AppCompatActivity() {
         }
 
         val label = TextView(this).apply {
-            text = getString(R.string.dialog_dns_label)
-            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_main))
+            text = "Custom DNS (leave blank to reset)"
+            setTextColor(Color.parseColor("#e8edf5"))
             textSize = 14f
         }
 
         val input = EditText(this).apply {
-            hint = getString(R.string.dialog_dns_placeholder)
+            hint = "1.1.1.1"
             inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS
             setText(ConfigStore.getCustomDns(this@MainActivity) ?: "")
             setSelection(text.length)
-            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.text_main))
-            setHintTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
+            setTextColor(Color.parseColor("#e8edf5"))
+            setHintTextColor(Color.parseColor("#8a9bb0"))
             textSize = 16f
-        }
-
-        val hint = TextView(this).apply {
-            text = getString(R.string.dialog_dns_hint)
-            setTextColor(ContextCompat.getColor(this@MainActivity, R.color.muted_label))
-            textSize = 12f
-            setPadding(0, pad / 2, 0, 0)
         }
 
         container.addView(label)
         container.addView(input)
-        container.addView(hint)
 
         AlertDialog.Builder(this)
-            .setTitle(R.string.dialog_dns_title)
+            .setTitle("Configure DNS")
             .setView(container)
-            .setPositiveButton(R.string.dialog_dns_save) { _, _ ->
+            .setPositiveButton("Save") { _, _ ->
                 val value = input.text.toString().trim()
                 applyDns(value.ifBlank { null })
             }
-            .setNeutralButton(R.string.dialog_dns_reset) { _, _ ->
+            .setNeutralButton("Reset") { _, _ ->
                 applyDns(null)
             }
-            .setNegativeButton(R.string.dialog_dns_cancel, null)
+            .setNegativeButton("Cancel", null)
             .show()
     }
 
@@ -788,7 +787,7 @@ class MainActivity : AppCompatActivity() {
         btnSubmit.setOnClickListener {
             val code = editVoucher.text.toString().trim()
             if (!isVoucherComplete(code)) {
-                txtError.text = getString(R.string.error_empty_voucher)
+                txtError.text = "Please enter a valid 16-character code."
                 txtError.visibility = View.VISIBLE
                 return@setOnClickListener
             }
@@ -807,7 +806,7 @@ class MainActivity : AppCompatActivity() {
                         is RegisterResult.Success -> {
                             EventLog.write(this, "OK", "Voucher accepted")
                             txtError.text = "Provisioning VPN..."
-                            txtError.setTextColor(ContextCompat.getColor(this, R.color.brand_gold))
+                            txtError.setTextColor(Color.parseColor("#f5c842"))
                             txtError.visibility = View.VISIBLE
                             
                             executor.execute {
@@ -848,7 +847,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         RegisterResult.NetworkError -> {
                             EventLog.write(this, "ERR", "Voucher rejected  network")
-                            txtError.text = getString(R.string.error_network)
+                            txtError.text = "Network error. Could not reach backend."
                             txtError.visibility = View.VISIBLE
                             btnSubmit.isEnabled = true
                             btnCancel.isEnabled = true
@@ -897,7 +896,7 @@ class MainActivity : AppCompatActivity() {
                     }
                     RegisterResult.NetworkError -> {
                         EventLog.write(this, "ERR", "Voucher rejected  network")
-                        showErrorDialog(getString(R.string.error_network))
+                        showErrorDialog("Network error. Could not reach backend.")
                     }
                 }
             }
@@ -938,9 +937,9 @@ class MainActivity : AppCompatActivity() {
         "voucher_not_found" -> "Voucher not found."
         "voucher_bound_to_different_user" -> "This voucher belongs to a different email."
         "voucher_already_used" -> "This voucher has already been used."
-        "subscription_inactive" -> getString(R.string.error_subscription_inactive)
-        "user_not_found" -> getString(R.string.error_user_not_found)
-        else -> getString(R.string.error_unknown)
+        "subscription_inactive" -> "Subscription is inactive."
+        "user_not_found" -> "User not found."
+        else -> "Unknown error."
     }
 
     private fun refreshUi() {
@@ -973,27 +972,27 @@ class MainActivity : AppCompatActivity() {
 
         renderLogPanel()
 
-        val lockPrefix = if (lockOn) getString(R.string.lock_prefix) else ""
-        val dnsSuffix = if (!customDns.isNullOrBlank()) getString(R.string.substate_dns_suffix, customDns) else ""
+        val lockPrefix = if (lockOn) "[LOCK] " else ""
+        val dnsSuffix = if (!customDns.isNullOrBlank()) " · DNS: $customDns" else ""
 
         when {
             !hasConfig -> {
                 applyState(
-                    text = getString(R.string.state_not_setup),
-                    subtext = getString(R.string.substate_not_setup),
-                    wordColour = R.color.muted_label,
-                    dotColour = R.color.state_red,
-                    buttonText = getString(R.string.action_connect)
+                    text = "NOT SET UP",
+                    subtext = "Tap connect to start",
+                    wordColour = Color.parseColor("#ff6b6b"),
+                    dotColour = Color.parseColor("#ff6b6b"),
+                    buttonText = "CONNECT"
                 )
                 cardMeta.visibility = View.GONE
             }
             connecting -> {
                 applyState(
-                    text = getString(R.string.state_connecting),
-                    subtext = lockPrefix + getString(R.string.substate_connecting) + dnsSuffix,
-                    wordColour = R.color.state_amber,
-                    dotColour = R.color.state_amber,
-                    buttonText = getString(R.string.action_disconnect)
+                    text = "CONNECTING",
+                    subtext = lockPrefix + "Establishing secure tunnel..." + dnsSuffix,
+                    wordColour = Color.parseColor("#f5b342"),
+                    dotColour = Color.parseColor("#f5b342"),
+                    buttonText = "DISCONNECT"
                 )
                 cardMeta.visibility = View.VISIBLE
                 updateMeta(running = false)
@@ -1004,25 +1003,25 @@ class MainActivity : AppCompatActivity() {
 
                 if (networkPresent) {
                     val sub = when (networkType) {
-                        "WIFI" -> getString(R.string.substate_secured_wifi)
-                        "CELLULAR" -> getString(R.string.substate_secured_cellular)
-                        "ETHERNET" -> getString(R.string.substate_secured_ethernet)
-                        else -> getString(R.string.substate_secured_other)
+                        "WIFI" -> "Secured · WiFi"
+                        "CELLULAR" -> "Secured · Cellular"
+                        "ETHERNET" -> "Secured · Ethernet"
+                        else -> "Secured · Connected"
                     }
                     applyState(
-                        text = getString(R.string.state_secured),
+                        text = "SECURED",
                         subtext = lockPrefix + sub + dnsSuffix,
-                        wordColour = R.color.brand_gold,
-                        dotColour = R.color.state_green,
-                        buttonText = getString(R.string.action_disconnect)
+                        wordColour = Color.parseColor("#f5c842"),
+                        dotColour = Color.parseColor("#4cd9b2"),
+                        buttonText = "DISCONNECT"
                     )
                 } else {
                     applyState(
-                        text = getString(R.string.state_standing_by),
-                        subtext = lockPrefix + getString(R.string.substate_standing_by) + dnsSuffix,
-                        wordColour = R.color.state_amber,
-                        dotColour = R.color.state_amber,
-                        buttonText = getString(R.string.action_disconnect)
+                        text = "STANDING BY",
+                        subtext = lockPrefix + "Tunnel open · No network" + dnsSuffix,
+                        wordColour = Color.parseColor("#f5b342"),
+                        dotColour = Color.parseColor("#f5b342"),
+                        buttonText = "DISCONNECT"
                     )
                 }
                 cardMeta.visibility = View.VISIBLE
@@ -1030,11 +1029,11 @@ class MainActivity : AppCompatActivity() {
             }
             else -> {
                 applyState(
-                    text = getString(R.string.state_disconnected),
-                    subtext = lockPrefix + getString(R.string.substate_disconnected) + dnsSuffix,
-                    wordColour = R.color.muted_label,
-                    dotColour = R.color.state_red,
-                    buttonText = getString(R.string.action_connect)
+                    text = "DISCONNECTED",
+                    subtext = lockPrefix + "Tap connect to start your tunnel" + dnsSuffix,
+                    wordColour = Color.parseColor("#8a9bb0"),
+                    dotColour = Color.parseColor("#ff6b6b"),
+                    buttonText = "CONNECT"
                 )
                 cardMeta.visibility = View.VISIBLE
                 updateMeta(running = false)
@@ -1044,9 +1043,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun applyState(text: String, subtext: String, wordColour: Int, dotColour: Int, buttonText: String) {
         txtState.text = text
-        txtState.setTextColor(ContextCompat.getColor(this, wordColour))
+        txtState.setTextColor(wordColour)
         txtSubstate.text = subtext
-        dotStatus.background?.setTint(ContextCompat.getColor(this, dotColour))
+        dotStatus.background?.setTint(dotColour)
         btnToggle.text = buttonText
         btnToggle.isEnabled = true
     }
@@ -1058,20 +1057,20 @@ class MainActivity : AppCompatActivity() {
 
         if (running) {
             val startedAt = ConfigStore.getTunnelStartedAt(this)
-            txtDuration.text = if (startedAt > 0L) formatDuration(System.currentTimeMillis() - startedAt) else getString(R.string.duration_placeholder)
+            txtDuration.text = if (startedAt > 0L) formatDuration(System.currentTimeMillis() - startedAt) else "--:--"
             txtData.text = formatData(Stats.rx, Stats.tx)
         } else {
-            txtDuration.text = getString(R.string.duration_placeholder)
-            txtData.text = getString(R.string.data_placeholder)
+            txtDuration.text = "--:--"
+            txtData.text = "↓0.0 ↑0.0 MB"
         }
 
         val expires = ConfigStore.getSubscriptionExpiresAt(this)
         if (expires.isNullOrEmpty()) {
-            txtEntitlement.text = getString(R.string.entitlement_active)
-            txtEntitlement.setTextColor(ContextCompat.getColor(this, R.color.brand_teal))
+            txtEntitlement.text = "Active"
+            txtEntitlement.setTextColor(Color.parseColor("#4cd9b2"))
         } else {
-            txtEntitlement.text = getString(R.string.entitlement_expires, expires)
-            txtEntitlement.setTextColor(ContextCompat.getColor(this, R.color.text_main))
+            txtEntitlement.text = "Expires $expires"
+            txtEntitlement.setTextColor(Color.parseColor("#e8edf5"))
         }
     }
 

@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/bg_dark"
+    android:background="#0a0f18"
     android:orientation="vertical">
 
+    <!-- HEADER -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -25,8 +26,8 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/wordmark_tt1"
-                android:textColor="@color/brand_hotpink"
+                android:text="CERBERUS PROTOCOL"
+                android:textColor="#ff6b6b"
                 android:textSize="9sp"
                 android:letterSpacing="0.2"
                 android:textStyle="bold" />
@@ -40,16 +41,16 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/wordmark_tt2"
-                    android:textColor="@color/brand_teal"
+                    android:text="CP"
+                    android:textColor="#4cd9b2"
                     android:textSize="18sp"
                     android:textStyle="bold|italic" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="@string/wordmark_vpn"
-                    android:textColor="@color/brand_gold"
+                    android:text="vpn"
+                    android:textColor="#f5c842"
                     android:textSize="18sp"
                     android:textStyle="italic" />
             </LinearLayout>
@@ -76,515 +77,508 @@
     <View
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:background="@color/border_inner" />
+        android:background="#1e2d3d" />
 
-    <ScrollView
+    <!-- MAIN CONTENT (FIXED - NO OUTER SCROLL) -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:fillViewport="true">
+        android:orientation="vertical"
+        android:padding="12dp">
 
-        <LinearLayout
+        <!-- Status Bar -->
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="12dp">
+            app:cardBackgroundColor="#0f1724"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#1e2d3d"
+            app:strokeWidth="1dp">
 
-            <com.google.android.material.card.MaterialCardView
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardBackgroundColor="@color/panel_bg"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_outer"
-                app:strokeWidth="1dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <View
+                    android:id="@+id/dotStatus"
+                    android:layout_width="8dp"
+                    android:layout_height="8dp"
+                    android:background="@drawable/bg_dot" />
+
+                <TextView
+                    android:id="@+id/txtState"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_marginStart="8dp"
+                    android:letterSpacing="0.06"
+                    android:text="NOT SET UP"
+                    android:textColor="#8a9bb0"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtSubstate"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:ellipsize="end"
+                    android:maxLines="1"
+                    android:text="Tap connect to start"
+                    android:textColor="#8a9bb0"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Meta Data -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardMeta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="#0f1724"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#1e2d3d"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
-                    android:padding="12dp">
-
-                    <View
-                        android:id="@+id/dotStatus"
-                        android:layout_width="8dp"
-                        android:layout_height="8dp"
-                        android:background="@drawable/bg_dot" />
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
 
                     <TextView
-                        android:id="@+id/txtState"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
                         android:layout_weight="1"
-                        android:layout_marginStart="8dp"
-                        android:letterSpacing="0.06"
-                        android:text="@string/state_not_setup"
-                        android:textColor="@color/muted_label"
-                        android:textSize="13sp"
-                        android:textStyle="bold" />
-
-                    <TextView
-                        android:id="@+id/txtSubstate"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:ellipsize="end"
-                        android:maxLines="1"
-                        android:text="@string/substate_not_setup"
-                        android:textColor="@color/muted_label"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardMeta"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:visibility="gone"
-                app:cardBackgroundColor="@color/panel_bg"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_outer"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginBottom="4dp"
-                        android:background="@color/border_inner" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:letterSpacing="0.08"
-                            android:text="@string/label_endpoint"
-                            android:textAllCaps="true"
-                            android:textColor="@color/muted_label"
-                            android:textSize="10sp" />
-
-                        <TextView
-                            android:id="@+id/txtEndpoint"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:textColor="@color/text_main"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/border_inner" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:letterSpacing="0.08"
-                            android:text="@string/label_duration"
-                            android:textAllCaps="true"
-                            android:textColor="@color/muted_label"
-                            android:textSize="10sp" />
-
-                        <TextView
-                            android:id="@+id/txtDuration"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:text="@string/duration_placeholder"
-                            android:textColor="@color/brand_teal"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/border_inner" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:letterSpacing="0.08"
-                            android:text="@string/label_data"
-                            android:textAllCaps="true"
-                            android:textColor="@color/muted_label"
-                            android:textSize="10sp" />
-
-                        <TextView
-                            android:id="@+id/txtData"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:text="@string/data_placeholder"
-                            android:textColor="@color/brand_teal"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:background="@color/border_inner" />
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal"
-                        android:paddingTop="6dp"
-                        android:paddingBottom="6dp">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:letterSpacing="0.08"
-                            android:text="@string/label_entitlement"
-                            android:textAllCaps="true"
-                            android:textColor="@color/muted_label"
-                            android:textSize="10sp" />
-
-                        <TextView
-                            android:id="@+id/txtEntitlement"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:fontFamily="monospace"
-                            android:textColor="@color/brand_teal"
-                            android:textSize="12sp" />
-                    </LinearLayout>
-
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                app:cardBackgroundColor="@color/panel_bg"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_outer"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnToggle"
-                        style="@style/Widget.TTVPN.Button.Outlined"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:text="@string/action_enter_voucher" />
-
-                    <CheckBox
-                        android:id="@+id/checkLock"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_gravity="center_horizontal"
-                        android:layout_marginTop="8dp"
-                        android:buttonTint="@color/brand_gold"
-                        android:text="@string/action_lock"
-                        android:textColor="@color/text_main"
-                        android:textSize="11sp" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- UPGRADE CARD -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardUpgrade"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:visibility="gone"
-                app:cardBackgroundColor="@color/panel_bg"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_outer"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Unlock Cerberus Dashboard"
-                        android:textColor="@color/brand_gold"
-                        android:textStyle="bold"
-                        android:textSize="12sp" />
-
-                    <TextView
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="Upgrade to Pro or Enterprise"
-                        android:textColor="@color/muted_label"
-                        android:textSize="10sp"
-                        android:layout_marginBottom="8dp" />
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnUpgrade"
-                        style="@style/Widget.TTVPN.Button.Primary"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:text="UPGRADE NOW" />
-                </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
-
-            <!-- CERBERUS CARD -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/cardCerberus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:visibility="gone"
-                app:cardBackgroundColor="@color/panel_bg"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_outer"
-                app:strokeWidth="1dp">
-
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
-
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:letterSpacing="0.08"
-                            android:text="CERBERUS · THREAT INTEL"
-                            android:textAllCaps="true"
-                            android:textColor="@color/muted_label"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/btnCerberusRefresh"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="?attr/selectableItemBackground"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="8dp"
-                            android:paddingTop="4dp"
-                            android:paddingBottom="4dp"
-                            android:text="REFRESH"
-                            android:textColor="@color/brand_gold"
-                            android:textSize="10sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginBottom="8dp"
-                        android:background="@color/border_inner" />
-
-                    <TextView
-                        android:id="@+id/txtCerberusStatus"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:text="Tap REFRESH to load live data"
-                        android:textColor="@color/muted_label"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:id="@+id/txtCerberusVitals"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="6dp"
-                        android:fontFamily="monospace"
-                        android:lineSpacingExtra="2dp"
-                        android:textColor="@color/text_main"
-                        android:textSize="11sp"
-                        android:visibility="gone" />
-
-                    <TextView
-                        android:id="@+id/txtCerberusFeedLabel"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
                         android:letterSpacing="0.08"
-                        android:text="THREAT FEED"
+                        android:text="ENDPOINT"
                         android:textAllCaps="true"
-                        android:textColor="@color/muted_label"
-                        android:textSize="10sp"
-                        android:visibility="gone" />
+                        android:textColor="#8a9bb0"
+                        android:textSize="10sp" />
 
-                    <LinearLayout
-                        android:id="@+id/cerberusThreatFeed"
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:id="@+id/txtEndpoint"
+                        android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
-                        android:background="@color/code_bg"
-                        android:orientation="vertical"
-                        android:padding="6dp"
-                        android:visibility="gone" />
-
-                    <!-- NEW COMMAND CENTER BUTTON -->
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/btnOpenCommandCenter"
-                        style="@style/Widget.TTVPN.Button.Outlined"
-                        android:layout_width="match_parent"
-                        android:layout_height="40dp"
-                        android:layout_marginTop="12dp"
-                        android:text="OPEN COMMAND CENTER"
-                        android:textColor="@color/brand_gold" />
-
+                        android:fontFamily="monospace"
+                        android:textColor="#e8edf5"
+                        android:textSize="12sp" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
-            <com.google.android.material.card.MaterialCardView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                app:cardBackgroundColor="@color/panel_bg"
-                app:cardCornerRadius="12dp"
-                app:cardElevation="0dp"
-                app:strokeColor="@color/border_outer"
-                app:strokeWidth="1dp">
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#1e2d3d" />
 
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical"
-                    android:padding="12dp">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
 
-                    <LinearLayout
-                        android:layout_width="match_parent"
+                    <TextView
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:layout_weight="1"
+                        android:letterSpacing="0.08"
+                        android:text="DURATION"
+                        android:textAllCaps="true"
+                        android:textColor="#8a9bb0"
+                        android:textSize="10sp" />
 
-                        <TextView
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:letterSpacing="0.08"
-                            android:text="@string/dialog_logs_title"
-                            android:textAllCaps="true"
-                            android:textColor="@color/muted_label"
-                            android:textSize="11sp" />
-
-                        <TextView
-                            android:id="@+id/txtLoggingState"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginEnd="8dp"
-                            android:text="@string/log_status_on"
-                            android:textSize="10sp" />
-
-                        <TextView
-                            android:id="@+id/btnClearLog"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:background="?attr/selectableItemBackground"
-                            android:clickable="true"
-                            android:focusable="true"
-                            android:paddingStart="8dp"
-                            android:paddingEnd="8dp"
-                            android:paddingTop="4dp"
-                            android:paddingBottom="4dp"
-                            android:text="@string/dialog_logs_clear"
-                            android:textColor="@color/brand_gold"
-                            android:textSize="10sp" />
-                    </LinearLayout>
-
-                    <View
-                        android:layout_width="match_parent"
-                        android:layout_height="1dp"
-                        android:layout_marginTop="8dp"
-                        android:layout_marginBottom="8dp"
-                        android:background="@color/border_inner" />
-
-                    <ScrollView
-                        android:id="@+id/logsScroll"
-                        android:layout_width="match_parent"
-                        android:layout_height="220dp"
-                        android:background="@color/code_bg"
-                        android:padding="8dp"
-                        android:scrollbars="none">
-
-                        <LinearLayout
-                            android:id="@+id/logEntriesContainer"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:orientation="vertical" />
-                    </ScrollView>
-
-                    <CheckBox
-                        android:id="@+id/chkKeepLog"
+                    <TextView
+                        android:id="@+id/txtDuration"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
-                        android:buttonTint="@color/brand_gold"
-                        android:text="@string/dialog_logs_keep"
-                        android:textColor="@color/text_main"
+                        android:fontFamily="monospace"
+                        android:text="--:--"
+                        android:textColor="#4cd9b2"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#1e2d3d" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.08"
+                        android:text="DATA"
+                        android:textAllCaps="true"
+                        android:textColor="#8a9bb0"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/txtData"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="↓0.0 ↑0.0 MB"
+                        android:textColor="#4cd9b2"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#1e2d3d" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingTop="6dp"
+                    android:paddingBottom="6dp">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.08"
+                        android:text="ENTITLEMENT"
+                        android:textAllCaps="true"
+                        android:textColor="#8a9bb0"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/txtEntitlement"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:textColor="#4cd9b2"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Connect Button -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:cardBackgroundColor="#0f1724"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#1e2d3d"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnToggle"
+                    style="@style/Widget.TTVPN.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:text="CONNECT" />
+
+                <CheckBox
+                    android:id="@+id/checkLock"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="8dp"
+                    android:buttonTint="#f5c842"
+                    android:text="Lock VPN on"
+                    android:textColor="#e8edf5"
+                    android:textSize="11sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Upgrade Card (Hidden for Pro/Enterprise) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardUpgrade"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="#0f1724"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#1e2d3d"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Unlock Cerberus Dashboard"
+                    android:textColor="#f5c842"
+                    android:textStyle="bold"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Upgrade to Pro or Enterprise"
+                    android:textColor="#8a9bb0"
+                    android:textSize="10sp"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnUpgrade"
+                    style="@style/Widget.TTVPN.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:text="UPGRADE NOW" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- CERBERUS CARD (Enterprise) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardCerberus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:visibility="gone"
+            app:cardBackgroundColor="#0f1724"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#1e2d3d"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.08"
+                        android:text="CERBERUS · THREAT INTEL"
+                        android:textAllCaps="true"
+                        android:textColor="#8a9bb0"
                         android:textSize="11sp" />
 
+                    <TextView
+                        android:id="@+id/btnCerberusRefresh"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:text="REFRESH"
+                        android:textColor="#f5c842"
+                        android:textSize="10sp" />
                 </LinearLayout>
-            </com.google.android.material.card.MaterialCardView>
 
-        </LinearLayout>
-    </ScrollView>
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="#1e2d3d" />
+
+                <TextView
+                    android:id="@+id/txtCerberusStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Tap REFRESH to load live data"
+                    android:textColor="#4cd9b2"
+                    android:textSize="11sp" />
+
+                <TextView
+                    android:id="@+id/txtCerberusVitals"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:fontFamily="monospace"
+                    android:lineSpacingExtra="2dp"
+                    android:textSize="11sp"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/txtCerberusFeedLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:letterSpacing="0.08"
+                    android:text="RECENT BANS"
+                    android:textAllCaps="true"
+                    android:textColor="#8a9bb0"
+                    android:textSize="10sp"
+                    android:visibility="gone" />
+
+                <LinearLayout
+                    android:id="@+id/cerberusThreatFeed"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:background="#080e18"
+                    android:orientation="vertical"
+                    android:padding="6dp"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenCommandCenter"
+                    style="@style/Widget.TTVPN.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="12dp"
+                    android:text="OPEN COMMAND CENTER"
+                    android:textColor="#f5c842" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- EVENT LOG CARD (Fills remaining space, scrolls internally) -->
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:layout_marginTop="8dp"
+            app:cardBackgroundColor="#0f1724"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#1e2d3d"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.08"
+                        android:text="EVENTS"
+                        android:textAllCaps="true"
+                        android:textColor="#8a9bb0"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/txtLoggingState"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:text="Logging: ON"
+                        android:textSize="10sp" />
+
+                    <TextView
+                        android:id="@+id/btnClearLog"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:text="CLEAR"
+                        android:textColor="#f5c842"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="#1e2d3d" />
+
+                <ScrollView
+                    android:id="@+id/logsScroll"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:background="#080e18"
+                    android:padding="8dp"
+                    android:scrollbars="none">
+
+                    <LinearLayout
+                        android:id="@+id/logEntriesContainer"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+                </ScrollView>
+
+                <CheckBox
+                    android:id="@+id/chkKeepLog"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:buttonTint="#f5c842"
+                    android:text="Keep log"
+                    android:textColor="#e8edf5"
+                    android:textSize="11sp" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+    </LinearLayout>
 
     <View
         android:layout_width="match_parent"
         android:layout_height="2dp"
-        android:background="@color/brand_gold" />
+        android:background="#f5c842" />
 
+    <!-- FOOTER -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/panel_bg"
+        android:background="#0f1724"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="10dp"
@@ -603,7 +597,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="CPvpn"
-                android:textColor="@color/brand_gold"
+                android:textColor="#f5c842"
                 android:textSize="10sp"
                 android:textStyle="bold" />
 
@@ -613,7 +607,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
                 android:text="v2.0.0 ©PayBridge(Pty) Ltd 2026"
-                android:textColor="@color/muted_label"
+                android:textColor="#8a9bb0"
                 android:textSize="10sp" />
         </LinearLayout>
 
@@ -634,8 +628,8 @@
                 android:paddingEnd="4dp"
                 android:paddingTop="4dp"
                 android:paddingBottom="4dp"
-                android:text="@string/action_update_ready"
-                android:textColor="@color/brand_teal"
+                android:text="UPDATE READY"
+                android:textColor="#4cd9b2"
                 android:textSize="10sp"
                 android:visibility="gone" />
 
@@ -644,7 +638,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text=" · "
-                android:textColor="@color/muted_label"
+                android:textColor="#8a9bb0"
                 android:textSize="10sp"
                 android:visibility="gone" />
 
@@ -659,8 +653,8 @@
                 android:minWidth="0dp"
                 android:paddingStart="8dp"
                 android:paddingEnd="8dp"
-                android:text="@string/action_exit"
-                android:textColor="@color/brand_gold"
+                android:text="EXIT APP"
+                android:textColor="#f5c842"
                 android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
