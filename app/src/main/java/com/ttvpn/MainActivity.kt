@@ -58,6 +58,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtLoggingState: TextView
     private lateinit var btnClearLog: TextView
     private lateinit var chkKeepLog: CheckBox
+    private lateinit var btnEnterprise: TextView // NEW
 
     private lateinit var cardUpgrade: MaterialCardView
     private lateinit var btnUpgrade: Button
@@ -142,6 +143,7 @@ class MainActivity : AppCompatActivity() {
         txtLoggingState = findViewById(R.id.txtLoggingState)
         btnClearLog = findViewById(R.id.btnClearLog)
         chkKeepLog = findViewById(R.id.chkKeepLog)
+        btnEnterprise = findViewById(R.id.btnEnterprise) // NEW
 
         cardUpgrade = findViewById(R.id.cardUpgrade)
         btnUpgrade = findViewById(R.id.btnUpgrade)
@@ -155,6 +157,8 @@ class MainActivity : AppCompatActivity() {
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnUpgrade.setOnClickListener { showUpgradeDialog() }
+        btnEnterprise.setOnClickListener { showVoucherDialog(null) } // NEW
+        
         btnExit.setOnClickListener {
             ConfigStore.clearAuth(this)
             startActivity(Intent(this, LoginActivity::class.java))
@@ -994,7 +998,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun updateMeta(running: Boolean) {
-        // DYNAMIC ENDPOINT UPDATE:
         val displayFlag = ConfigStore.getServerFlag(this)
         val displayEndpoint = ConfigStore.getEndpoint(this)
         txtEndpoint.text = "$displayFlag  $displayEndpoint"

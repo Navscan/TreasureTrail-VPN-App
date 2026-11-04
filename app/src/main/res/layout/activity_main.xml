@@ -54,6 +54,24 @@
                     android:textStyle="italic" />
             </LinearLayout>
         </LinearLayout>
+
+        <!-- NEW ENTERPRISE VOUCHER BUTTON -->
+        <TextView
+            android:id="@+id/btnEnterprise"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="?attr/selectableItemBackground"
+            android:clickable="true"
+            android:focusable="true"
+            android:paddingStart="12dp"
+            android:paddingEnd="12dp"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp"
+            android:text="VOUCHER"
+            android:textColor="@color/brand_gold"
+            android:textSize="11sp"
+            android:textStyle="bold"
+            android:letterSpacing="0.1" />
     </LinearLayout>
 
     <View
@@ -305,7 +323,6 @@
                         android:text="@string/action_lock"
                         android:textColor="@color/text_main"
                         android:textSize="11sp" />
-
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
