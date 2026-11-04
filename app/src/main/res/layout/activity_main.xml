@@ -55,7 +55,7 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- NEW ENTERPRISE VOUCHER BUTTON -->
+        <!-- MUTED ENTERPRISE BUTTON HERE -->
         <TextView
             android:id="@+id/btnEnterprise"
             android:layout_width="wrap_content"
@@ -67,11 +67,11 @@
             android:paddingEnd="12dp"
             android:paddingTop="8dp"
             android:paddingBottom="8dp"
-            android:text="VOUCHER"
-            android:textColor="@color/brand_gold"
+            android:text="Enterprise"
+            android:textColor="#3a4b6b"
             android:textSize="11sp"
-            android:textStyle="bold"
-            android:letterSpacing="0.1" />
+            android:textStyle="normal"
+            android:letterSpacing="0.05" />
     </LinearLayout>
 
     <View
