@@ -6,7 +6,7 @@ object ConfigStore {
     private fun prefs(context: Context) =
         context.getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
 
-    // --- Auth ---
+    // --- Auth (JWT) ---
     fun saveAuth(context: Context, token: String, tier: String) {
         prefs(context).edit()
             .putString(Config.PREF_AUTH_TOKEN, token)
@@ -27,6 +27,14 @@ object ConfigStore {
             .apply()
     }
 
+    // --- Enterprise Voucher Token ---
+    fun saveVoucherCode(context: Context, code: String) {
+        prefs(context).edit().putString(Config.PREF_VOUCHER_CODE, code).apply()
+    }
+
+    fun getVoucherCode(context: Context): String? =
+        prefs(context).getString(Config.PREF_VOUCHER_CODE, null)
+
     // --- VPN Config ---
     fun saveConfig(
         context: Context,
@@ -34,7 +42,6 @@ object ConfigStore {
         assignedIp: String,
         subscriptionExpiresAt: String?
     ) {
-        // Parse endpoint dynamically from the .conf file
         var endpoint = Config.WG_ENDPOINT_DISPLAY
         var flag = Config.WG_SERVER_FLAG
         var country = Config.WG_SERVER_COUNTRY
@@ -42,8 +49,6 @@ object ConfigStore {
         wgConfig.lines().forEach { line ->
             if (line.trimStart().startsWith("Endpoint") && line.contains("=")) {
                 endpoint = line.substringAfter("=").trim()
-                // Simple logic: if it's not the SA IP, assume it's the Premium EU server.
-                // We can expand this map as more servers are added.
                 if (endpoint != "154.66.198.207:51820") {
                     flag = "🇪🇺"
                     country = "Europe"
@@ -76,7 +81,6 @@ object ConfigStore {
     fun getSubscriptionExpiresAt(context: Context): String? =
         prefs(context).getString(Config.PREF_SUBSCRIPTION_EXPIRES, null)
 
-    // New dynamic getters
     fun getEndpoint(context: Context): String =
         prefs(context).getString(Config.PREF_WG_ENDPOINT, Config.WG_ENDPOINT_DISPLAY) ?: Config.WG_ENDPOINT_DISPLAY
 

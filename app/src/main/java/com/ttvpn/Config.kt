@@ -25,6 +25,7 @@ object Config {
     // Auth Keys
     const val PREF_AUTH_TOKEN = "auth_token"
     const val PREF_USER_TIER = "user_tier"
+    const val PREF_VOUCHER_CODE = "voucher_code"
 
     // VPN Config Keys
     const val PREF_WG_CONFIG = "wg_config"
@@ -37,7 +38,7 @@ object Config {
     const val PREF_LOCK_ENABLED = "lock_enabled"
     const val PREF_CUSTOM_DNS = "custom_dns"
     
-    // Dynamic Server Keys (NEW)
+    // Dynamic Server Keys
     const val PREF_WG_ENDPOINT = "wg_endpoint"
     const val PREF_WG_SERVER_FLAG = "wg_server_flag"
     const val PREF_WG_SERVER_COUNTRY = "wg_server_country"

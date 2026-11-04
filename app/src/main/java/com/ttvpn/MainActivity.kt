@@ -125,8 +125,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // FORCED LOGIN REMOVED. App now boots directly to MainActivity.
-
         setContentView(R.layout.activity_main)
 
         btnToggle = findViewById(R.id.btnToggle)
@@ -177,14 +175,15 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, ThreatCentreActivity::class.java))
         }
         
-        // EXIT APP: Closes the UI, but keeps the VPN service running in the background.
         btnExit.setOnClickListener {
             finishAffinity() 
         }
 
-        // LOGOUT: Kills the tunnel, closes the UI, and sets the next launch to disconnected.
+        // LOGOUT: Kills the tunnel, clears the JWT session, and closes the UI.
+        // The user's Enterprise voucher remains in the DB and is fetched again on login.
         btnLogout.setOnClickListener {
             VpnService.stop(this)
+            ConfigStore.clearAuth(this) 
             finishAffinity()
         }
 
@@ -250,7 +249,10 @@ class MainActivity : AppCompatActivity() {
     private fun onTopRightTapped() {
         val tier = ConfigStore.getUserTier(this)
         when (tier) {
-            "enterprise" -> showVoucherDialog(null)
+            "enterprise" -> {
+                val savedVoucher = ConfigStore.getVoucherCode(this)
+                showVoucherDialog(savedVoucher)
+            }
             "pro" -> {
                 AlertDialog.Builder(this)
                     .setTitle("Pro Plan Active")
@@ -259,7 +261,6 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
             else -> {
-                // For "free" or "open" users, tapping this should prompt them to log in if they have an Enterprise voucher.
                 startActivity(Intent(this, LoginActivity::class.java))
             }
         }
@@ -662,8 +663,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun onToggleTapped() {
         val token = ConfigStore.getAuthToken(this)
+        val tier = ConfigStore.getUserTier(this)
+
         if (token == null) {
-            // Allow Free/Pro users to connect if they have a config
             if (ConfigStore.hasConfig(this)) {
                 if (ConfigStore.isVpnRunning(this)) {
                     if (ConfigStore.isLockEnabled(this)) {
@@ -686,6 +688,12 @@ class MainActivity : AppCompatActivity() {
                     .show()
                 return
             }
+        }
+
+        // Enterprise Security Check
+        if (tier == "enterprise" && ConfigStore.getVoucherCode(this) == null) {
+            showErrorDialog("No active voucher token found. Please tap Enterprise to enter your voucher.")
+            return
         }
 
         executor.execute {
@@ -849,7 +857,8 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        val initial = prefill ?: readClipboardIfVoucher()
+        // Prefill from param, saved prefs, or clipboard
+        val initial = prefill ?: ConfigStore.getVoucherCode(this) ?: readClipboardIfVoucher()
         if (!initial.isNullOrEmpty()) {
             editVoucher.setText(formatVoucher(initial))
             editVoucher.setSelection(editVoucher.text.length)
@@ -882,6 +891,9 @@ class MainActivity : AppCompatActivity() {
                 handler.post {
                     when (voucherResult) {
                         is RegisterResult.Success -> {
+                            // Save the new voucher token!
+                            ConfigStore.saveVoucherCode(this, code)
+                            
                             EventLog.write(this, "OK", "Voucher accepted")
                             txtError.text = "Provisioning VPN..."
                             txtError.setTextColor(Color.parseColor("#f5c842"))
@@ -946,6 +958,9 @@ class MainActivity : AppCompatActivity() {
             handler.post {
                 when (voucherResult) {
                     is RegisterResult.Success -> {
+                        // Save the new voucher token!
+                        ConfigStore.saveVoucherCode(this, code)
+                        
                         EventLog.write(this, "OK", "Voucher accepted")
                         executor.execute {
                             val provResult = ApiClient.provisionConfig(token)
@@ -1028,7 +1043,6 @@ class MainActivity : AppCompatActivity() {
         val customDns = ConfigStore.getCustomDns(this)
         val tier = ConfigStore.getUserTier(this)
 
-        // Dynamic Top-Right Button
         btnTopRightStatus.text = when (tier) {
             "enterprise" -> "Enterprise"
             "pro" -> "Pro"
