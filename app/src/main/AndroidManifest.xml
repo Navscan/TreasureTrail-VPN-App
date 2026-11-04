@@ -14,7 +14,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="CPvpn"
         android:theme="@style/Theme.TTVPN">
-        
+
         <activity
             android:name=".LoginActivity"
             android:exported="true">
@@ -35,7 +35,13 @@
                 <data android:scheme="cpvpn" />
             </intent-filter>
         </activity>
-        
+
+        <!-- NEW COMMAND CENTER ACTIVITY -->
+        <activity
+            android:name=".CommandCenterActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TTVPN" />
+
         <service
             android:name=".VpnService"
             android:permission="android.permission.BIND_VPN_SERVICE"
@@ -48,6 +54,7 @@
                 <action android:name="android.net.VpnService" />
             </intent-filter>
         </service>
+
         <receiver
             android:name=".BootReceiver"
             android:enabled="true"
@@ -56,6 +63,7 @@
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -65,5 +73,6 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
+
     </application>
 </manifest>

@@ -69,6 +69,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtCerberusVitals: TextView
     private lateinit var txtCerberusFeedLabel: TextView
     private lateinit var cerberusThreatFeed: LinearLayout
+    private lateinit var btnOpenCommandCenter: Button
 
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
@@ -154,10 +155,14 @@ class MainActivity : AppCompatActivity() {
         txtCerberusVitals = findViewById(R.id.txtCerberusVitals)
         txtCerberusFeedLabel = findViewById(R.id.txtCerberusFeedLabel)
         cerberusThreatFeed = findViewById(R.id.cerberusThreatFeed)
+        btnOpenCommandCenter = findViewById(R.id.btnOpenCommandCenter)
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnUpgrade.setOnClickListener { showUpgradeDialog() }
         btnEnterprise.setOnClickListener { showVoucherDialog(null) }
+        btnOpenCommandCenter.setOnClickListener {
+            startActivity(Intent(this, CommandCenterActivity::class.java))
+        }
         
         btnExit.setOnClickListener {
             ConfigStore.clearAuth(this)
@@ -331,6 +336,7 @@ class MainActivity : AppCompatActivity() {
         txtCerberusVitals.visibility = View.GONE
         txtCerberusFeedLabel.visibility = View.GONE
         cerberusThreatFeed.visibility = View.GONE
+        btnOpenCommandCenter.visibility = View.GONE
     }
 
     private fun renderCerberus(s: CerberusStatus) {
@@ -384,6 +390,9 @@ class MainActivity : AppCompatActivity() {
                 cerberusThreatFeed.addView(tv)
             }
         }
+
+        // Show the button ONLY when the dashboard is successfully loaded
+        btnOpenCommandCenter.visibility = View.VISIBLE
     }
 
     private fun formatUptimeHuman(seconds: Long): String {

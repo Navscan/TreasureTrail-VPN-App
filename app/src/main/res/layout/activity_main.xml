@@ -55,7 +55,6 @@
             </LinearLayout>
         </LinearLayout>
 
-        <!-- MUTED ENTERPRISE BUTTON HERE -->
         <TextView
             android:id="@+id/btnEnterprise"
             android:layout_width="wrap_content"
@@ -469,6 +468,16 @@
                         android:orientation="vertical"
                         android:padding="6dp"
                         android:visibility="gone" />
+
+                    <!-- NEW COMMAND CENTER BUTTON -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnOpenCommandCenter"
+                        style="@style/Widget.TTVPN.Button.Outlined"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="12dp"
+                        android:text="OPEN COMMAND CENTER"
+                        android:textColor="@color/brand_gold" />
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
