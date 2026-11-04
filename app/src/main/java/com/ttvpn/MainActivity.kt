@@ -58,7 +58,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtLoggingState: TextView
     private lateinit var btnClearLog: TextView
     private lateinit var chkKeepLog: CheckBox
-    private lateinit var btnEnterprise: TextView // NEW
+    private lateinit var btnEnterprise: TextView
 
     private lateinit var cardUpgrade: MaterialCardView
     private lateinit var btnUpgrade: Button
@@ -143,7 +143,7 @@ class MainActivity : AppCompatActivity() {
         txtLoggingState = findViewById(R.id.txtLoggingState)
         btnClearLog = findViewById(R.id.btnClearLog)
         chkKeepLog = findViewById(R.id.chkKeepLog)
-        btnEnterprise = findViewById(R.id.btnEnterprise) // NEW
+        btnEnterprise = findViewById(R.id.btnEnterprise)
 
         cardUpgrade = findViewById(R.id.cardUpgrade)
         btnUpgrade = findViewById(R.id.btnUpgrade)
@@ -157,7 +157,7 @@ class MainActivity : AppCompatActivity() {
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnUpgrade.setOnClickListener { showUpgradeDialog() }
-        btnEnterprise.setOnClickListener { showVoucherDialog(null) } // NEW
+        btnEnterprise.setOnClickListener { showVoucherDialog(null) }
         
         btnExit.setOnClickListener {
             ConfigStore.clearAuth(this)
@@ -856,16 +856,14 @@ class MainActivity : AppCompatActivity() {
 
     private fun formatVoucher(raw: String): String {
         val clean = raw.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
-        val body = if (clean.startsWith("CPVPN")) clean.substring(5) else if (clean.startsWith("TVPN")) clean.substring(4) else clean
-        val trimmed = body.take(12)
+        val trimmed = clean.take(16)
         val parts = trimmed.chunked(4)
-        return if (parts.isEmpty()) "CPVPN-" else "CPVPN-" + parts.joinToString("-")
+        return parts.joinToString("-")
     }
 
     private fun isVoucherComplete(code: String): Boolean {
         val clean = code.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
-        val body = if (clean.startsWith("CPVPN")) clean.substring(5) else if (clean.startsWith("TVPN")) clean.substring(4) else clean
-        return body.length == 12 && body.all { it.isLetterOrDigit() }
+        return clean.length == 16 && clean.all { it.isLetterOrDigit() }
     }
 
     private fun readClipboardIfVoucher(): String? {
@@ -873,8 +871,7 @@ class MainActivity : AppCompatActivity() {
             val cm = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val text = cm.primaryClip?.getItemAt(0)?.text?.toString() ?: return null
             val clean = text.uppercase(Locale.US).replace(Regex("[^A-Z0-9]"), "")
-            val body = if (clean.startsWith("CPVPN")) clean.substring(5) else if (clean.startsWith("TVPN")) clean.substring(4) else clean
-            if (body.length == 12) text else null
+            if (clean.length == 16) text else null
         } catch (_: Exception) {
             null
         }
