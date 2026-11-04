@@ -36,9 +36,9 @@
             </intent-filter>
         </activity>
 
-        <!-- NEW COMMAND CENTER ACTIVITY -->
+        <!-- THREAT CENTRE ACTIVITY -->
         <activity
-            android:name=".CommandCenterActivity"
+            android:name=".ThreatCentreActivity"
             android:exported="false"
             android:theme="@style/Theme.TTVPN" />
 

@@ -79,7 +79,7 @@
         android:layout_height="1dp"
         android:background="#1e2d3d" />
 
-    <!-- MAIN CONTENT (FIXED - NO OUTER SCROLL) -->
+    <!-- MAIN CONTENT -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
@@ -318,7 +318,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Upgrade Card (Hidden for Pro/Enterprise) -->
+        <!-- UPGRADE CARD -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/cardUpgrade"
             android:layout_width="match_parent"
@@ -341,7 +341,7 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Unlock Cerberus Dashboard"
+                    android:text="Unlock Threat Intel"
                     android:textColor="#f5c842"
                     android:textStyle="bold"
                     android:textSize="12sp" />
@@ -363,122 +363,46 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- CERBERUS CARD (Enterprise) -->
-        <com.google.android.material.card.MaterialCardView
-            android:id="@+id/cardCerberus"
+        <!-- TAB SWITCHER -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:visibility="gone"
-            app:cardBackgroundColor="#0f1724"
-            app:cardCornerRadius="12dp"
-            app:cardElevation="0dp"
-            app:strokeColor="#1e2d3d"
-            app:strokeWidth="1dp">
+            android:layout_marginTop="12dp"
+            android:orientation="horizontal"
+            android:background="#0f1724"
+            android:padding="4dp">
 
-            <LinearLayout
-                android:layout_width="match_parent"
+            <TextView
+                android:id="@+id/tabLogs"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:padding="12dp">
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="VPN LOGS"
+                android:textColor="#f5c842"
+                android:textStyle="bold"
+                android:textSize="11sp" />
 
-                <LinearLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal">
+            <TextView
+                android:id="@+id/tabThreat"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:padding="8dp"
+                android:text="THREAT INTEL"
+                android:textColor="#8a9bb0"
+                android:textStyle="bold"
+                android:textSize="11sp" />
+        </LinearLayout>
 
-                    <TextView
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_weight="1"
-                        android:letterSpacing="0.08"
-                        android:text="CERBERUS · THREAT INTEL"
-                        android:textAllCaps="true"
-                        android:textColor="#8a9bb0"
-                        android:textSize="11sp" />
-
-                    <TextView
-                        android:id="@+id/btnCerberusRefresh"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:background="?attr/selectableItemBackground"
-                        android:clickable="true"
-                        android:focusable="true"
-                        android:paddingStart="8dp"
-                        android:paddingEnd="8dp"
-                        android:paddingTop="4dp"
-                        android:paddingBottom="4dp"
-                        android:text="REFRESH"
-                        android:textColor="#f5c842"
-                        android:textSize="10sp" />
-                </LinearLayout>
-
-                <View
-                    android:layout_width="match_parent"
-                    android:layout_height="1dp"
-                    android:layout_marginTop="8dp"
-                    android:layout_marginBottom="8dp"
-                    android:background="#1e2d3d" />
-
-                <TextView
-                    android:id="@+id/txtCerberusStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Tap REFRESH to load live data"
-                    android:textColor="#4cd9b2"
-                    android:textSize="11sp" />
-
-                <TextView
-                    android:id="@+id/txtCerberusVitals"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:fontFamily="monospace"
-                    android:lineSpacingExtra="2dp"
-                    android:textSize="11sp"
-                    android:visibility="gone" />
-
-                <TextView
-                    android:id="@+id/txtCerberusFeedLabel"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="10dp"
-                    android:letterSpacing="0.08"
-                    android:text="RECENT BANS"
-                    android:textAllCaps="true"
-                    android:textColor="#8a9bb0"
-                    android:textSize="10sp"
-                    android:visibility="gone" />
-
-                <LinearLayout
-                    android:id="@+id/cerberusThreatFeed"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:background="#080e18"
-                    android:orientation="vertical"
-                    android:padding="6dp"
-                    android:visibility="gone" />
-
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btnOpenCommandCenter"
-                    style="@style/Widget.TTVPN.Button.Outlined"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="12dp"
-                    android:text="OPEN COMMAND CENTER"
-                    android:textColor="#f5c842" />
-
-            </LinearLayout>
-        </com.google.android.material.card.MaterialCardView>
-
-        <!-- EVENT LOG CARD (Fills remaining space, scrolls internally) -->
+        <!-- LOGS CONTAINER -->
         <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardLogs"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
-            android:layout_marginTop="8dp"
             app:cardBackgroundColor="#0f1724"
             app:cardCornerRadius="12dp"
             app:cardElevation="0dp"
@@ -563,6 +487,128 @@
                     android:text="Keep log"
                     android:textColor="#e8edf5"
                     android:textSize="11sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- CERBERUS CONTAINER -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/cardCerberus"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:visibility="gone"
+            app:cardBackgroundColor="#0f1724"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="0dp"
+            app:strokeColor="#1e2d3d"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:letterSpacing="0.08"
+                        android:text="CERBERUS · THREAT INTEL"
+                        android:textAllCaps="true"
+                        android:textColor="#8a9bb0"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/btnCerberusRefresh"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="?attr/selectableItemBackground"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:paddingStart="8dp"
+                        android:paddingEnd="8dp"
+                        android:paddingTop="4dp"
+                        android:paddingBottom="4dp"
+                        android:text="REFRESH"
+                        android:textColor="#f5c842"
+                        android:textSize="10sp" />
+                </LinearLayout>
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="8dp"
+                    android:background="#1e2d3d" />
+
+                <ScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="1">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/txtCerberusStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="Tap REFRESH to load live data"
+                            android:textColor="#4cd9b2"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/txtCerberusVitals"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:fontFamily="monospace"
+                            android:lineSpacingExtra="2dp"
+                            android:textSize="11sp"
+                            android:visibility="gone" />
+
+                        <TextView
+                            android:id="@+id/txtCerberusFeedLabel"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="10dp"
+                            android:letterSpacing="0.08"
+                            android:text="RECENT BANS"
+                            android:textAllCaps="true"
+                            android:textColor="#8a9bb0"
+                            android:textSize="10sp"
+                            android:visibility="gone" />
+
+                        <LinearLayout
+                            android:id="@+id/cerberusThreatFeed"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="4dp"
+                            android:background="#080e18"
+                            android:orientation="vertical"
+                            android:padding="6dp"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </ScrollView>
+
+                <!-- BUTTON IS NOW AT THE BOTTOM OF CERBERUS TAB -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnOpenThreatCentre"
+                    style="@style/Widget.TTVPN.Button.Outlined"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp"
+                    android:layout_marginTop="12dp"
+                    android:text="OPEN THREAT CENTRE"
+                    android:textColor="#f5c842" />
 
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>

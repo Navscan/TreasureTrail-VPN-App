@@ -31,7 +31,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:gravity="center"
-            android:text="CERBERUS TERMINAL"
+            android:text="THREAT CENTRE"
             android:textColor="#e8edf5"
             android:textSize="14sp"
             android:textStyle="bold" />

@@ -62,6 +62,10 @@ class MainActivity : AppCompatActivity() {
     private lateinit var chkKeepLog: CheckBox
     private lateinit var btnEnterprise: TextView
 
+    private lateinit var tabLogs: TextView
+    private lateinit var tabThreat: TextView
+    private lateinit var cardLogs: MaterialCardView
+
     private lateinit var cardUpgrade: MaterialCardView
     private lateinit var btnUpgrade: Button
 
@@ -71,7 +75,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var txtCerberusVitals: TextView
     private lateinit var txtCerberusFeedLabel: TextView
     private lateinit var cerberusThreatFeed: LinearLayout
-    private lateinit var btnOpenCommandCenter: Button
+    private lateinit var btnOpenThreatCentre: Button
 
     private val handler = Handler(Looper.getMainLooper())
     private val executor = Executors.newSingleThreadExecutor()
@@ -83,6 +87,7 @@ class MainActivity : AppCompatActivity() {
     private var suppressLogToggle = false
     private var lastLogFingerprint: String = ""
     private var logUserScrolledAway: Boolean = false
+    private var isThreatTabActive = false
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -148,6 +153,10 @@ class MainActivity : AppCompatActivity() {
         chkKeepLog = findViewById(R.id.chkKeepLog)
         btnEnterprise = findViewById(R.id.btnEnterprise)
 
+        tabLogs = findViewById(R.id.tabLogs)
+        tabThreat = findViewById(R.id.tabThreat)
+        cardLogs = findViewById(R.id.cardLogs)
+
         cardUpgrade = findViewById(R.id.cardUpgrade)
         btnUpgrade = findViewById(R.id.btnUpgrade)
 
@@ -157,13 +166,17 @@ class MainActivity : AppCompatActivity() {
         txtCerberusVitals = findViewById(R.id.txtCerberusVitals)
         txtCerberusFeedLabel = findViewById(R.id.txtCerberusFeedLabel)
         cerberusThreatFeed = findViewById(R.id.cerberusThreatFeed)
-        btnOpenCommandCenter = findViewById(R.id.btnOpenCommandCenter)
+        btnOpenThreatCentre = findViewById(R.id.btnOpenThreatCentre)
+
+        // Tab Toggles
+        tabLogs.setOnClickListener { switchTab(false) }
+        tabThreat.setOnClickListener { switchTab(true) }
 
         btnToggle.setOnClickListener { onToggleTapped() }
         btnUpgrade.setOnClickListener { showUpgradeDialog() }
         btnEnterprise.setOnClickListener { showVoucherDialog(null) }
-        btnOpenCommandCenter.setOnClickListener {
-            startActivity(Intent(this, CommandCenterActivity::class.java))
+        btnOpenThreatCentre.setOnClickListener {
+            startActivity(Intent(this, ThreatCentreActivity::class.java))
         }
         
         btnExit.setOnClickListener {
@@ -223,9 +236,35 @@ class MainActivity : AppCompatActivity() {
         cleanupAfterInstall()
         EventLog.init(this)
         EventLog.write(this, "EVENT", "App opened")
+        
+        // Default to Logs tab
+        switchTab(false)
         refreshUi()
         txtFooterVersion.text = "v" + BuildConfig.VERSION_NAME + " ©PayBridge(Pty) Ltd 2026"
         handleIntent(intent)
+    }
+
+    private fun switchTab(threatActive: Boolean) {
+        isThreatTabActive = threatActive
+        if (threatActive) {
+            tabThreat.setTextColor(Color.parseColor("#f5c842"))
+            tabThreat.setBackgroundColor(Color.parseColor("#1e2d3d"))
+            tabLogs.setTextColor(Color.parseColor("#8a9bb0"))
+            tabLogs.setBackgroundColor(Color.TRANSPARENT)
+
+            cardLogs.visibility = View.GONE
+            cardCerberus.visibility = View.VISIBLE
+            refreshCerberus()
+        } else {
+            tabLogs.setTextColor(Color.parseColor("#f5c842"))
+            tabLogs.setBackgroundColor(Color.parseColor("#1e2d3d"))
+            tabThreat.setTextColor(Color.parseColor("#8a9bb0"))
+            tabThreat.setBackgroundColor(Color.TRANSPARENT)
+
+            cardLogs.visibility = View.VISIBLE
+            cardCerberus.visibility = View.GONE
+            renderLogPanel(force = true)
+        }
     }
 
     override fun onResume() {
@@ -238,11 +277,11 @@ class MainActivity : AppCompatActivity() {
             checkLicenseAndRefresh()
         } else {
             val tier = ConfigStore.getUserTier(this)
-            if (tier == "enterprise" && ConfigStore.hasConfig(this)) {
-                cardCerberus.visibility = View.VISIBLE
-                refreshCerberus()
-            } else {
-                cardCerberus.visibility = View.GONE
+            if (tier != "enterprise") {
+                // If user is not enterprise and was on Threat tab, kick them back to logs
+                if (isThreatTabActive) {
+                    switchTab(false)
+                }
             }
         }
     }
@@ -307,7 +346,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun refreshCerberus() {
-        if (cardCerberus.visibility != View.VISIBLE) return
+        if (!isThreatTabActive) return
 
         btnCerberusRefresh.isEnabled = false
         txtCerberusStatus.text = "Loading…"
@@ -338,7 +377,7 @@ class MainActivity : AppCompatActivity() {
         txtCerberusVitals.visibility = View.GONE
         txtCerberusFeedLabel.visibility = View.GONE
         cerberusThreatFeed.visibility = View.GONE
-        btnOpenCommandCenter.visibility = View.GONE
+        btnOpenThreatCentre.visibility = View.GONE
     }
 
     private fun renderCerberus(s: CerberusStatus) {
@@ -348,7 +387,6 @@ class MainActivity : AppCompatActivity() {
 
         val sb = SpannableStringBuilder()
         
-        // Helper to append styled text
         fun appendLine(label: String, value: String) {
             val start = sb.length
             sb.append(label.padEnd(9))
@@ -400,7 +438,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        btnOpenCommandCenter.visibility = View.VISIBLE
+        btnOpenThreatCentre.visibility = View.VISIBLE
     }
 
     private fun formatUptimeHuman(seconds: Long): String {
@@ -960,10 +998,12 @@ class MainActivity : AppCompatActivity() {
             cardUpgrade.visibility = View.GONE
         }
         
-        if (tier == "enterprise" && hasConfig) {
-            cardCerberus.visibility = View.VISIBLE
+        if (tier != "enterprise") {
+            // If they lost enterprise, hide the tab and kick to logs
+            tabThreat.visibility = View.GONE
+            if (isThreatTabActive) switchTab(false)
         } else {
-            cardCerberus.visibility = View.GONE
+            tabThreat.visibility = View.VISIBLE
         }
 
         val updateStaged = Updater.isUpdateStaged(this)

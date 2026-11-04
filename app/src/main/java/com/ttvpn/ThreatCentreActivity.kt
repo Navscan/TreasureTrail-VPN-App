@@ -15,7 +15,7 @@ import java.util.Locale
 import java.util.TimeZone
 import java.util.concurrent.Executors
 
-class CommandCenterActivity : AppCompatActivity() {
+class ThreatCentreActivity : AppCompatActivity() {
 
     private lateinit var logsContainer: LinearLayout
     private lateinit var logsScroll: View
@@ -24,7 +24,7 @@ class CommandCenterActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_command_center)
+        setContentView(R.layout.activity_threat_centre)
 
         logsContainer = findViewById(R.id.logsContainer)
         logsScroll = findViewById(R.id.logsScroll)
