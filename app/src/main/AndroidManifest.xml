@@ -15,18 +15,14 @@
         android:label="CPvpn"
         android:theme="@style/Theme.TTVPN">
 
+        <!-- MAIN ACTIVITY IS NOW THE LAUNCHER -->
         <activity
-            android:name=".LoginActivity"
+            android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -35,6 +31,11 @@
                 <data android:scheme="cpvpn" />
             </intent-filter>
         </activity>
+
+        <!-- LOGIN ACTIVITY IS NOW JUST A STANDARD SCREEN -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
 
         <!-- THREAT CENTRE ACTIVITY -->
         <activity
