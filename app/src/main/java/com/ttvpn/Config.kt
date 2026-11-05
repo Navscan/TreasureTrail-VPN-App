@@ -9,6 +9,7 @@ object Config {
     // SaaS Auth Endpoints
     const val ENDPOINT_AUTH_LOGIN = "$BASE_URL/api/auth/login"
     const val ENDPOINT_AUTH_REGISTER = "$BASE_URL/api/auth/register"
+    const val ENDPOINT_AUTH_GUEST = "$BASE_URL/api/auth/guest"
     const val ENDPOINT_AUTH_ME = "$BASE_URL/api/auth/me"
     const val ENDPOINT_PROVISION = "$BASE_URL/api/config/provision"
     const val ENDPOINT_PAY_INITIATE = "$BASE_URL/api/pay/initiate"

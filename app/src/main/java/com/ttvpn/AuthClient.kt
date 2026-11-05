@@ -25,7 +25,11 @@ object AuthClient {
         return postAuth(Config.ENDPOINT_AUTH_REGISTER, body)
     }
 
-    // Updated to use the new /api/auth/me endpoint
+    fun guestLogin(deviceId: String): AuthResult {
+        val body = JSONObject().put("device_id", deviceId).toString()
+        return postAuth(Config.ENDPOINT_AUTH_GUEST, body)
+    }
+
     fun checkLicense(token: String): LicenseResult {
         return try {
             val url = URL(Config.ENDPOINT_AUTH_ME)

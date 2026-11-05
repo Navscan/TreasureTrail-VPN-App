@@ -37,6 +37,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import com.google.android.material.card.MaterialCardView
 import java.util.Locale
+import java.util.UUID
 import java.util.concurrent.Executors
 
 class MainActivity : AppCompatActivity() {
@@ -164,7 +165,6 @@ class MainActivity : AppCompatActivity() {
         cerberusThreatFeed = findViewById(R.id.cerberusThreatFeed)
         btnOpenThreatCentre = findViewById(R.id.btnOpenThreatCentre)
 
-        // Tab Toggles
         tabLogs.setOnClickListener { switchTab(false) }
         tabThreat.setOnClickListener { switchTab(true) }
 
@@ -179,8 +179,6 @@ class MainActivity : AppCompatActivity() {
             finishAffinity() 
         }
 
-        // LOGOUT: Kills the tunnel, clears the JWT session, and closes the UI.
-        // The user's Enterprise voucher remains in the DB and is fetched again on login.
         btnLogout.setOnClickListener {
             VpnService.stop(this)
             ConfigStore.clearAuth(this) 
@@ -240,10 +238,31 @@ class MainActivity : AppCompatActivity() {
         EventLog.init(this)
         EventLog.write(this, "EVENT", "App opened")
         
+        // SILENT GUEST REGISTRATION
+        if (ConfigStore.getAuthToken(this) == null) {
+            silentGuestRegister()
+        }
+
         switchTab(false)
         refreshUi()
         txtFooterVersion.text = "v" + BuildConfig.VERSION_NAME + " ©PayBridge(Pty) Ltd 2026"
         handleIntent(intent)
+    }
+
+    private fun silentGuestRegister() {
+        btnToggle.isEnabled = false
+        executor.execute {
+            val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: UUID.randomUUID().toString()
+            val result = AuthClient.guestLogin(deviceId)
+            handler.post {
+                btnToggle.isEnabled = true
+                if (result is AuthResult.Success) {
+                    ConfigStore.saveAuth(this, result.token, result.tier)
+                    EventLog.write(this, "OK", "Guest session initialized")
+                    refreshUi()
+                }
+            }
+        }
     }
 
     private fun onTopRightTapped() {
@@ -261,7 +280,18 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
             else -> {
-                startActivity(Intent(this, LoginActivity::class.java))
+                // Open tier menu
+                val options = arrayOf("Login as Enterprise User", "Upgrade to Pro")
+                AlertDialog.Builder(this)
+                    .setTitle("Open Tier")
+                    .setItems(options) { _, which ->
+                        if (which == 0) {
+                            startActivity(Intent(this, LoginActivity::class.java))
+                        } else {
+                            showUpgradeDialog()
+                        }
+                    }
+                    .show()
             }
         }
     }
@@ -666,28 +696,12 @@ class MainActivity : AppCompatActivity() {
         val tier = ConfigStore.getUserTier(this)
 
         if (token == null) {
-            if (ConfigStore.hasConfig(this)) {
-                if (ConfigStore.isVpnRunning(this)) {
-                    if (ConfigStore.isLockEnabled(this)) {
-                        showLockedDialog()
-                        return
-                    }
-                    EventLog.write(this, "EVENT", "Disconnect tapped")
-                    stopVpnService()
-                } else {
-                    EventLog.write(this, "EVENT", "Connect tapped")
-                    pendingStart = true
-                    requestConsentThenStart()
-                }
-                return
-            } else {
-                AlertDialog.Builder(this)
-                    .setTitle("Subscription Required")
-                    .setMessage("Please upgrade to Pro or Enterprise to provision a VPN config.")
-                    .setPositiveButton("OK", null)
-                    .show()
-                return
-            }
+            AlertDialog.Builder(this)
+                .setTitle("Initializing...")
+                .setMessage("Please wait while we set up your account.")
+                .setPositiveButton("OK", null)
+                .show()
+            return
         }
 
         // Enterprise Security Check
@@ -958,9 +972,7 @@ class MainActivity : AppCompatActivity() {
             handler.post {
                 when (voucherResult) {
                     is RegisterResult.Success -> {
-                        // Save the new voucher token!
                         ConfigStore.saveVoucherCode(this, code)
-                        
                         EventLog.write(this, "OK", "Voucher accepted")
                         executor.execute {
                             val provResult = ApiClient.provisionConfig(token)
