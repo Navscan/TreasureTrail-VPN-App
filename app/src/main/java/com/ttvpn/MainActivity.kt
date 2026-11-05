@@ -100,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             EventLog.write(this, "WARN", "Consent denied")
             pendingStart = false
+            refreshUi()
         }
     }
 
@@ -175,9 +176,7 @@ class MainActivity : AppCompatActivity() {
             startActivity(Intent(this, ThreatCentreActivity::class.java))
         }
         
-        btnExit.setOnClickListener {
-            finishAffinity() 
-        }
+        btnExit.setOnClickListener { finishAffinity() }
 
         btnLogout.setOnClickListener {
             VpnService.stop(this)
@@ -238,7 +237,6 @@ class MainActivity : AppCompatActivity() {
         EventLog.init(this)
         EventLog.write(this, "EVENT", "App opened")
         
-        // SILENT GUEST REGISTRATION
         if (ConfigStore.getAuthToken(this) == null) {
             silentGuestRegister()
         }
@@ -251,6 +249,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun silentGuestRegister() {
         btnToggle.isEnabled = false
+        btnToggle.text = "INITIALIZING..."
         executor.execute {
             val deviceId = Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID) ?: UUID.randomUUID().toString()
             val result = AuthClient.guestLogin(deviceId)
@@ -259,8 +258,8 @@ class MainActivity : AppCompatActivity() {
                 if (result is AuthResult.Success) {
                     ConfigStore.saveAuth(this, result.token, result.tier)
                     EventLog.write(this, "OK", "Guest session initialized")
-                    refreshUi()
                 }
+                refreshUi()
             }
         }
     }
@@ -280,7 +279,6 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
             else -> {
-                // Open tier menu
                 val options = arrayOf("Login as Enterprise User", "Upgrade to Pro")
                 AlertDialog.Builder(this)
                     .setTitle("Open Tier")
@@ -692,28 +690,54 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onToggleTapped() {
+        // 1. INSTANT DISCONNECT
+        // If the VPN is running, we disconnect immediately. No network check needed.
+        if (ConfigStore.isVpnRunning(this)) {
+            if (ConfigStore.isLockEnabled(this)) {
+                showLockedDialog()
+                return
+            }
+            EventLog.write(this, "EVENT", "Disconnect tapped")
+            stopVpnService()
+            return
+        }
+
+        // 2. RESPONSIVE CONNECT
         val token = ConfigStore.getAuthToken(this)
         val tier = ConfigStore.getUserTier(this)
 
         if (token == null) {
-            AlertDialog.Builder(this)
-                .setTitle("Initializing...")
-                .setMessage("Please wait while we set up your account.")
-                .setPositiveButton("OK", null)
-                .show()
-            return
+            if (ConfigStore.hasConfig(this)) {
+                EventLog.write(this, "EVENT", "Connect tapped")
+                pendingStart = true
+                requestConsentThenStart()
+                return
+            } else {
+                AlertDialog.Builder(this)
+                    .setTitle("Subscription Required")
+                    .setMessage("Please upgrade to Pro or Enterprise to provision a VPN config.")
+                    .setPositiveButton("OK", null)
+                    .show()
+                return
+            }
         }
 
-        // Enterprise Security Check
         if (tier == "enterprise" && ConfigStore.getVoucherCode(this) == null) {
             showErrorDialog("No active voucher token found. Please tap Enterprise to enter your voucher.")
             return
         }
 
+        // Instant UI feedback
+        btnToggle.isEnabled = false
+        btnToggle.text = "CONNECTING..."
+        EventLog.write(this, "EVENT", "Connect tapped")
+
         executor.execute {
             val result = AuthClient.checkLicense(token)
             handler.post {
                 if (!result.isActive) {
+                    btnToggle.isEnabled = true
+                    btnToggle.text = "CONNECT"
                     AlertDialog.Builder(this)
                         .setTitle("Subscription Inactive")
                         .setMessage("Your subscription is not active. Please upgrade to Pro or Enterprise.")
@@ -724,19 +748,17 @@ class MainActivity : AppCompatActivity() {
 
                 if (!ConfigStore.hasConfig(this)) {
                     EventLog.write(this, "INFO", "Provisioning VPN config...")
-                    btnToggle.isEnabled = false
-
                     executor.execute {
                         val provResult = ApiClient.provisionConfig(token)
                         handler.post {
                             btnToggle.isEnabled = true
+                            btnToggle.text = "CONNECT"
                             when (provResult) {
                                 is RegisterResult.Success -> {
                                     ConfigStore.saveConfig(this, provResult.config, provResult.assignedIp, null)
                                     EventLog.write(this, "OK", "VPN config provisioned")
                                     pendingStart = true
                                     requestConsentThenStart()
-                                    refreshUi()
                                 }
                                 is RegisterResult.Failure -> {
                                     EventLog.write(this, "ERR", "Provision failed: ${provResult.reason}")
@@ -752,18 +774,9 @@ class MainActivity : AppCompatActivity() {
                     return@post
                 }
 
-                if (ConfigStore.isVpnRunning(this)) {
-                    if (ConfigStore.isLockEnabled(this)) {
-                        showLockedDialog()
-                        return@post
-                    }
-                    EventLog.write(this, "EVENT", "Disconnect tapped")
-                    stopVpnService()
-                } else {
-                    EventLog.write(this, "EVENT", "Connect tapped")
-                    pendingStart = true
-                    requestConsentThenStart()
-                }
+                btnToggle.isEnabled = true
+                pendingStart = true
+                requestConsentThenStart()
             }
         }
     }
@@ -780,10 +793,16 @@ class MainActivity : AppCompatActivity() {
     private fun doStartVpnService() {
         VpnService.start(this)
         pendingStart = false
+        // Update UI immediately so it doesn't feel stuck
+        btnToggle.isEnabled = false
+        btnToggle.text = "DISCONNECT"
     }
 
     private fun stopVpnService() {
         VpnService.stop(this)
+        // Update UI immediately so it doesn't feel stuck
+        btnToggle.isEnabled = false
+        btnToggle.text = "CONNECT"
     }
 
     private fun showLockedDialog() {
@@ -871,7 +890,6 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        // Prefill from param, saved prefs, or clipboard
         val initial = prefill ?: ConfigStore.getVoucherCode(this) ?: readClipboardIfVoucher()
         if (!initial.isNullOrEmpty()) {
             editVoucher.setText(formatVoucher(initial))
@@ -905,9 +923,7 @@ class MainActivity : AppCompatActivity() {
                 handler.post {
                     when (voucherResult) {
                         is RegisterResult.Success -> {
-                            // Save the new voucher token!
                             ConfigStore.saveVoucherCode(this, code)
-                            
                             EventLog.write(this, "OK", "Voucher accepted")
                             txtError.text = "Provisioning VPN..."
                             txtError.setTextColor(Color.parseColor("#f5c842"))
@@ -926,7 +942,6 @@ class MainActivity : AppCompatActivity() {
                                             dialog.dismiss()
                                             pendingStart = true
                                             requestConsentThenStart()
-                                            refreshUi()
                                         }
                                         is RegisterResult.Failure -> {
                                             EventLog.write(this, "ERR", "Provision failed: ${provResult.reason}")
@@ -983,7 +998,6 @@ class MainActivity : AppCompatActivity() {
                                         EventLog.write(this, "OK", "VPN config provisioned")
                                         pendingStart = true
                                         requestConsentThenStart()
-                                        refreshUi()
                                     }
                                     is RegisterResult.Failure -> {
                                         showErrorDialog("Config failed: ${provResult.reason}")
@@ -1159,6 +1173,8 @@ class MainActivity : AppCompatActivity() {
         txtSubstate.text = subtext
         dotStatus.background?.setTint(dotColour)
         btnToggle.text = buttonText
+        // We only enable it here if it's currently disabled and we aren't in the middle of a network request.
+        // But for simplicity, we just set it to true and let the network flow override it.
         btnToggle.isEnabled = true
     }
 
