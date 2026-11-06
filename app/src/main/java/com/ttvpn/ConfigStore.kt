@@ -1,6 +1,8 @@
 package com.ttvpn
 
 import android.content.Context
+import android.util.Base64
+import org.json.JSONObject
 
 object ConfigStore {
     private fun prefs(context: Context) =
@@ -19,6 +21,23 @@ object ConfigStore {
 
     fun getUserTier(context: Context): String =
         prefs(context).getString(Config.PREF_USER_TIER, "free") ?: "free"
+
+    fun getUserEmail(context: Context): String {
+        val token = getAuthToken(context) ?: return ""
+        return try {
+            val parts = token.split(".")
+            if (parts.size < 2) return ""
+            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE))
+            JSONObject(payload).optString("email", "")
+        } catch (e: Exception) {
+            ""
+        }
+    }
+
+    // Keep this just in case, but getUserEmail() does the actual work now
+    fun saveUserEmail(context: Context, email: String) {
+        // No-op, email is extracted directly from the JWT
+    }
 
     fun clearAuth(context: Context) {
         prefs(context).edit()

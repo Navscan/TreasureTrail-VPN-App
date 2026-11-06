@@ -100,7 +100,6 @@ class MainActivity : AppCompatActivity() {
         } else {
             EventLog.write(this, "WARN", "Consent denied")
             pendingStart = false
-            refreshUi()
         }
     }
 
@@ -126,7 +125,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         setContentView(R.layout.activity_main)
 
         btnToggle = findViewById(R.id.btnToggle)
@@ -378,6 +376,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun initiatePayment(plan: String) {
         val token = ConfigStore.getAuthToken(this) ?: return
+        
+        // If the user is a Guest (email ends with @cpvpn.local), prompt for a real email
+        if (ConfigStore.getUserEmail(this).endsWith("@cpvpn.local")) {
+            promptForEmail(plan)
+            return
+        }
+
         EventLog.write(this, "INFO", "Initiating $plan payment...")
         executor.execute {
             val url = ApiClient.initiatePayment(token, plan)
@@ -392,6 +397,44 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun promptForEmail(plan: String) {
+        val input = EditText(this).apply {
+            hint = "you@example.com"
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+        }
+        
+        AlertDialog.Builder(this)
+            .setTitle("Enter Email Address")
+            .setMessage("Please enter your email address to receive your Pro receipt and manage your account.")
+            .setView(input)
+            .setPositiveButton("Continue") { _, _ ->
+                val newEmail = input.text.toString().trim()
+                if (newEmail.isBlank() || !newEmail.contains("@")) {
+                    showErrorDialog("Please enter a valid email address.")
+                    return@setPositiveButton
+                }
+                
+                val token = ConfigStore.getAuthToken(this) ?: return@setPositiveButton
+                executor.execute {
+                    val updateResult = AuthClient.updateEmail(token, newEmail)
+                    handler.post {
+                        if (updateResult is AuthResult.Success) {
+                            // Save new token and update local email cache
+                            ConfigStore.saveAuth(this, updateResult.token, "free")
+                            ConfigStore.saveUserEmail(this, newEmail)
+                            
+                            // Now proceed to Paystack
+                            initiatePayment(plan)
+                        } else {
+                            showErrorDialog("Failed to update email. It might already be in use.")
+                        }
+                    }
+                }
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
     }
 
     private fun refreshCerberus() {
@@ -435,16 +478,13 @@ class MainActivity : AppCompatActivity() {
         txtCerberusStatus.setTextColor(Color.parseColor("#4cd9b2"))
 
         val sb = SpannableStringBuilder()
-        
         fun appendLine(label: String, value: String) {
             val start = sb.length
             sb.append(label.padEnd(9))
             sb.setSpan(ForegroundColorSpan(Color.parseColor("#8a9bb0")), start, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            
             val valStart = sb.length
             sb.append(value)
             sb.setSpan(ForegroundColorSpan(Color.parseColor("#4cd9b2")), valStart, sb.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
-            
             sb.append("\n")
         }
 
@@ -452,12 +492,7 @@ class MainActivity : AppCompatActivity() {
         appendLine("Mem", "${s.memPercent}%  ${formatBytes(s.memUsedBytes)} / ${formatBytes(s.memTotalBytes)}")
         appendLine("Disk", "${s.diskPercent}%  ${formatBytes(s.diskUsedBytes)} / ${formatBytes(s.diskTotalBytes)}")
         appendLine("Fail2ban", "${s.bannedTotal} banned across $jailCount jail${if (jailCount == 1) "" else "s"}")
-        
-        if (s.failedServices.isEmpty()) {
-            appendLine("Failed", "none")
-        } else {
-            appendLine("Failed", s.failedServices.joinToString(", "))
-        }
+        if (s.failedServices.isEmpty()) appendLine("Failed", "none") else appendLine("Failed", s.failedServices.joinToString(", "))
 
         txtCerberusVitals.text = sb
         txtCerberusVitals.visibility = View.VISIBLE
@@ -519,22 +554,14 @@ class MainActivity : AppCompatActivity() {
         } else {
             try {
                 installPermissionLauncher.launch(
-                    Intent(
-                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
-                        Uri.parse("package:$packageName")
-                    )
+                    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:$packageName"))
                 )
-            } catch (_: Exception) {
-            }
+            } catch (_: Exception) {}
         }
     }
 
     private fun hasInstallPermission(): Boolean {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            packageManager.canRequestPackageInstalls()
-        } else {
-            true
-        }
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) packageManager.canRequestPackageInstalls() else true
     }
 
     private fun cleanupAfterInstall() {
@@ -544,8 +571,7 @@ class MainActivity : AppCompatActivity() {
             if (stagedVersion > 0 && stagedVersion <= BuildConfig.VERSION_CODE) {
                 Updater.clearStagedUpdate(this)
             }
-        } catch (_: Exception) {
-        }
+        } catch (_: Exception) {}
     }
 
     private fun maybeCheckForUpdate() {
@@ -554,9 +580,7 @@ class MainActivity : AppCompatActivity() {
                 val prefs = getSharedPreferences(Config.PREFS_NAME, Context.MODE_PRIVATE)
                 val stagedUrl = prefs.getString(Config.PREF_STAGED_UPDATE_URL, null)
                 val stagedVersion = prefs.getInt(Config.PREF_STAGED_UPDATE_VERSION, 0)
-                val retryDownload = !stagedUrl.isNullOrEmpty() &&
-                    stagedVersion > BuildConfig.VERSION_CODE &&
-                    !Updater.isUpdateStaged(this)
+                val retryDownload = !stagedUrl.isNullOrEmpty() && stagedVersion > BuildConfig.VERSION_CODE && !Updater.isUpdateStaged(this)
 
                 if (retryDownload) {
                     Updater.downloadApk(this)
@@ -566,8 +590,7 @@ class MainActivity : AppCompatActivity() {
                         Updater.downloadApk(this)
                     }
                 }
-            } catch (_: Exception) {
-            }
+            } catch (_: Exception) {}
             handler.post { refreshUi() }
         }
     }
@@ -579,7 +602,6 @@ class MainActivity : AppCompatActivity() {
         val sp = SpannableString(full)
         val labelColor = Color.parseColor("#8a9bb0")
         val wordColor = Color.parseColor(if (enabled) "#4cd9b2" else "#ff6b6b")
-        
         sp.setSpan(ForegroundColorSpan(labelColor), 0, label.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         sp.setSpan(ForegroundColorSpan(wordColor), label.length, full.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
         sp.setSpan(StyleSpan(Typeface.BOLD), label.length, full.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
@@ -624,7 +646,6 @@ class MainActivity : AppCompatActivity() {
                     orientation = LinearLayout.HORIZONTAL
                     setPadding(0, padV, 0, padV)
                 }
-
                 val time = TextView(this).apply {
                     text = entry.timestamp
                     setTextColor(Color.parseColor("#5a6f82"))
@@ -632,7 +653,6 @@ class MainActivity : AppCompatActivity() {
                     textSize = 10f
                     layoutParams = LinearLayout.LayoutParams((60 * density).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
                 }
-
                 val tag = TextView(this).apply {
                     text = entry.tag
                     setTextColor(tagColourFor(entry.tag))
@@ -640,7 +660,6 @@ class MainActivity : AppCompatActivity() {
                     textSize = 10f
                     layoutParams = LinearLayout.LayoutParams((48 * density).toInt(), LinearLayout.LayoutParams.WRAP_CONTENT)
                 }
-
                 val msg = TextView(this).apply {
                     text = entry.message
                     setTextColor(Color.parseColor("#c8d0e0"))
@@ -650,7 +669,6 @@ class MainActivity : AppCompatActivity() {
                     maxLines = 2
                     layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
                 }
-
                 row.addView(time)
                 row.addView(tag)
                 row.addView(msg)
@@ -690,8 +708,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun onToggleTapped() {
-        // 1. INSTANT DISCONNECT
-        // If the VPN is running, we disconnect immediately. No network check needed.
         if (ConfigStore.isVpnRunning(this)) {
             if (ConfigStore.isLockEnabled(this)) {
                 showLockedDialog()
@@ -702,7 +718,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // 2. RESPONSIVE CONNECT
         val token = ConfigStore.getAuthToken(this)
         val tier = ConfigStore.getUserTier(this)
 
@@ -727,7 +742,6 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Instant UI feedback
         btnToggle.isEnabled = false
         btnToggle.text = "CONNECTING..."
         EventLog.write(this, "EVENT", "Connect tapped")
@@ -793,14 +807,12 @@ class MainActivity : AppCompatActivity() {
     private fun doStartVpnService() {
         VpnService.start(this)
         pendingStart = false
-        // Update UI immediately so it doesn't feel stuck
         btnToggle.isEnabled = false
         btnToggle.text = "DISCONNECT"
     }
 
     private fun stopVpnService() {
         VpnService.stop(this)
-        // Update UI immediately so it doesn't feel stuck
         btnToggle.isEnabled = false
         btnToggle.text = "CONNECT"
     }
@@ -857,9 +869,7 @@ class MainActivity : AppCompatActivity() {
     private fun applyDns(dns: String?) {
         val wasRunning = ConfigStore.isVpnRunning(this)
         if (!ConfigStore.setCustomDns(this, dns)) return
-
         EventLog.write(this, "EVENT", if (dns.isNullOrBlank()) "DNS reset" else "DNS set to $dns")
-
         if (wasRunning) {
             VpnService.stop(this)
             handler.postDelayed({
@@ -1173,8 +1183,6 @@ class MainActivity : AppCompatActivity() {
         txtSubstate.text = subtext
         dotStatus.background?.setTint(dotColour)
         btnToggle.text = buttonText
-        // We only enable it here if it's currently disabled and we aren't in the middle of a network request.
-        // But for simplicity, we just set it to true and let the network flow override it.
         btnToggle.isEnabled = true
     }
 
