@@ -100,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             EventLog.write(this, "WARN", "Consent denied")
             pendingStart = false
+            refreshUi()
         }
     }
 
@@ -376,9 +377,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun initiatePayment(plan: String) {
         val token = ConfigStore.getAuthToken(this) ?: return
+        val currentEmail = ConfigStore.getUserEmail(this)
         
-        // If the user is a Guest (email ends with @cpvpn.local), prompt for a real email
-        if (ConfigStore.getUserEmail(this).endsWith("@cpvpn.local")) {
+        // If the user is a Guest (or email failed to parse), prompt for a real email
+        if (currentEmail.endsWith("@cpvpn.local") || currentEmail.isBlank()) {
             promptForEmail(plan)
             return
         }
@@ -421,11 +423,8 @@ class MainActivity : AppCompatActivity() {
                     val updateResult = AuthClient.updateEmail(token, newEmail)
                     handler.post {
                         if (updateResult is AuthResult.Success) {
-                            // Save new token and update local email cache
                             ConfigStore.saveAuth(this, updateResult.token, "free")
                             ConfigStore.saveUserEmail(this, newEmail)
-                            
-                            // Now proceed to Paystack
                             initiatePayment(plan)
                         } else {
                             showErrorDialog("Failed to update email. It might already be in use.")
@@ -1078,6 +1077,13 @@ class MainActivity : AppCompatActivity() {
         val lockOn = ConfigStore.isLockEnabled(this)
         val customDns = ConfigStore.getCustomDns(this)
         val tier = ConfigStore.getUserTier(this)
+
+        // Hide Logout button for non-enterprise users
+        if (tier == "enterprise") {
+            btnLogout.visibility = View.VISIBLE
+        } else {
+            btnLogout.visibility = View.GONE
+        }
 
         btnTopRightStatus.text = when (tier) {
             "enterprise" -> "Enterprise"

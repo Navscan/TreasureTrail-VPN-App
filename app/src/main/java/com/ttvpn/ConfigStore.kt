@@ -27,14 +27,14 @@ object ConfigStore {
         return try {
             val parts = token.split(".")
             if (parts.size < 2) return ""
-            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE))
+            // Added Base64.NO_WRAP to prevent Android from throwing an error on valid JWTs
+            val payload = String(Base64.decode(parts[1], Base64.URL_SAFE or Base64.NO_WRAP))
             JSONObject(payload).optString("email", "")
         } catch (e: Exception) {
             ""
         }
     }
 
-    // Keep this just in case, but getUserEmail() does the actual work now
     fun saveUserEmail(context: Context, email: String) {
         // No-op, email is extracted directly from the JWT
     }
