@@ -90,6 +90,7 @@ class MainActivity : AppCompatActivity() {
     private var lastLogFingerprint: String = ""
     private var logUserScrolledAway: Boolean = false
     private var isThreatTabActive = false
+    private var hasPromptedForVoucher = false
 
     private val vpnPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -265,19 +266,24 @@ class MainActivity : AppCompatActivity() {
 
     private fun onTopRightTapped() {
         val tier = ConfigStore.getUserTier(this)
-        when (tier) {
-            "enterprise" -> {
-                val savedVoucher = ConfigStore.getVoucherCode(this)
-                showVoucherDialog(savedVoucher)
-            }
-            "pro" -> {
+        val email = ConfigStore.getUserEmail(this)
+        val isGuest = email.endsWith("@cpvpn.local") || email.isBlank()
+
+        when {
+            tier == "pro" -> {
                 AlertDialog.Builder(this)
                     .setTitle("Pro Plan Active")
                     .setMessage("Your Pro subscription is managed via FlipStack.store. Thank you for your support!")
                     .setPositiveButton("OK", null)
                     .show()
             }
+            tier == "enterprise" || !isGuest -> {
+                // If they are enterprise, OR if they logged in with a real email (awaiting voucher)
+                val savedVoucher = ConfigStore.getVoucherCode(this)
+                showVoucherDialog(savedVoucher)
+            }
             else -> {
+                // Guest menu
                 val options = arrayOf("Login as Enterprise User", "Upgrade to Pro")
                 AlertDialog.Builder(this)
                     .setTitle("Open Tier")
@@ -321,8 +327,17 @@ class MainActivity : AppCompatActivity() {
         handler.post(pollRunnable)
         maybeCheckForUpdate()
 
-        // FORCE a license refresh when resuming (e.g., returning from LoginActivity)
-        checkLicenseAndRefresh()
+        val email = ConfigStore.getUserEmail(this)
+        val tier = ConfigStore.getUserTier(this)
+        val isGuest = email.endsWith("@cpvpn.local") || email.isBlank()
+
+        // If they are logged in with a real email but haven't entered a voucher yet, prompt them automatically
+        if (!isGuest && tier == "free" && ConfigStore.getVoucherCode(this) == null && !hasPromptedForVoucher) {
+            hasPromptedForVoucher = true
+            showVoucherDialog(null)
+        } else {
+            checkLicenseAndRefresh()
+        }
     }
 
     override fun onPause() {
@@ -347,18 +362,8 @@ class MainActivity : AppCompatActivity() {
             val result = AuthClient.checkLicense(token)
             handler.post {
                 if (result.isActive) {
-                    // Update the local tier based on what the backend says
                     ConfigStore.saveAuth(this, token, result.tier)
                     refreshUi()
-                    
-                    // If we just logged in as Enterprise, update the UI immediately
-                    if (result.tier == "enterprise") {
-                        val savedVoucher = ConfigStore.getVoucherCode(this)
-                        if (savedVoucher == null) {
-                             // Prompt for voucher if they don't have one saved
-                             showVoucherDialog(null)
-                        }
-                    }
                 }
             }
         }
@@ -905,7 +910,7 @@ class MainActivity : AppCompatActivity() {
 
         val dialog = AlertDialog.Builder(this)
             .setView(view)
-            .setCancelable(true)
+            .setCancelable(false) // Force them to enter it if they are in this flow
             .create()
 
         btnCancel.setOnClickListener { dialog.dismiss() }
@@ -1075,16 +1080,19 @@ class MainActivity : AppCompatActivity() {
         val lockOn = ConfigStore.isLockEnabled(this)
         val customDns = ConfigStore.getCustomDns(this)
         val tier = ConfigStore.getUserTier(this)
+        val email = ConfigStore.getUserEmail(this)
+        val isGuest = email.endsWith("@cpvpn.local") || email.isBlank()
 
-        if (tier == "enterprise") {
+        if (tier == "enterprise" || !isGuest) {
             btnLogout.visibility = View.VISIBLE
         } else {
             btnLogout.visibility = View.GONE
         }
 
-        btnTopRightStatus.text = when (tier) {
-            "enterprise" -> "Enterprise"
-            "pro" -> "Pro"
+        btnTopRightStatus.text = when {
+            tier == "enterprise" -> "Enterprise"
+            tier == "pro" -> "Pro"
+            !isGuest -> "Enterprise" // They are logged in as a real user waiting for voucher
             else -> "Open"
         }
 
@@ -1092,7 +1100,7 @@ class MainActivity : AppCompatActivity() {
         checkLock.isChecked = lockOn
         suppressLockChange = false
 
-        if (tier == "free") {
+        if (tier == "free" && isGuest) {
             cardUpgrade.visibility = View.VISIBLE
         } else {
             cardUpgrade.visibility = View.GONE
