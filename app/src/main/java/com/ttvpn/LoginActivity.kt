@@ -1,6 +1,5 @@
 package com.ttvpn
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.widget.Button
@@ -15,10 +14,12 @@ class LoginActivity : AppCompatActivity() {
     private lateinit var editEmail: EditText
     private lateinit var editPassword: EditText
     private lateinit var btnLogin: Button
+    private lateinit var btnToggleMode: TextView
     private lateinit var txtError: TextView
     private lateinit var progressBar: ProgressBar
 
     private val executor = Executors.newSingleThreadExecutor()
+    private var isLoginMode = true
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -27,8 +28,21 @@ class LoginActivity : AppCompatActivity() {
         editEmail = findViewById(R.id.editEmail)
         editPassword = findViewById(R.id.editPassword)
         btnLogin = findViewById(R.id.btnLogin)
+        btnToggleMode = findViewById(R.id.btnToggleMode)
         txtError = findViewById(R.id.txtError)
         progressBar = findViewById(R.id.progressBar)
+
+        btnToggleMode.setOnClickListener {
+            isLoginMode = !isLoginMode
+            txtError.visibility = View.GONE
+            if (isLoginMode) {
+                btnLogin.text = "SIGN IN"
+                btnToggleMode.text = "Need an account? Register"
+            } else {
+                btnLogin.text = "REGISTER"
+                btnToggleMode.text = "Already have an account? Sign In"
+            }
+        }
 
         btnLogin.setOnClickListener {
             val email = editEmail.text.toString().trim()
@@ -39,32 +53,40 @@ class LoginActivity : AppCompatActivity() {
                 return@setOnClickListener
             }
 
-            performLogin(email, password)
+            performAction(email, password)
         }
     }
 
-    private fun performLogin(email: String, password: String) {
+    private fun performAction(email: String, password: String) {
         btnLogin.isEnabled = false
+        btnToggleMode.isEnabled = false
         progressBar.visibility = View.VISIBLE
         txtError.visibility = View.GONE
 
         executor.execute {
-            val result = AuthClient.login(email, password)
+            val result = if (isLoginMode) {
+                AuthClient.login(email, password)
+            } else {
+                AuthClient.register(email, password)
+            }
+
             runOnUiThread {
                 btnLogin.isEnabled = true
+                btnToggleMode.isEnabled = true
                 progressBar.visibility = View.GONE
 
                 when (result) {
                     is AuthResult.Success -> {
-                        // CRITICAL FIX: Save the new Enterprise JWT token and tier, overwriting the Guest token
                         ConfigStore.saveAuth(this, result.token, result.tier)
                         EventLog.write(this, "OK", "Authenticated as $email")
-                        
-                        // Close LoginActivity and return to MainActivity
                         finish()
                     }
                     is AuthResult.Failure -> {
-                        showError("Login failed: ${result.error}")
+                        if (!isLoginMode && result.error == "email_exists") {
+                            showError("Email already registered. Try logging in.")
+                        } else {
+                            showError("Failed: ${result.error}")
+                        }
                     }
                     AuthResult.NetworkError -> {
                         showError("Network error. Could not reach backend.")
