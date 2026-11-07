@@ -365,12 +365,11 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showUpgradeDialog() {
-        val plans = arrayOf("Pro - R99/month", "Enterprise - R299/month")
+        val plans = arrayOf("Pro - R99/month (US & Global Access)")
         AlertDialog.Builder(this)
-            .setTitle("Select Plan")
-            .setItems(plans) { _, which ->
-                val plan = if (which == 0) "pro" else "enterprise"
-                initiatePayment(plan)
+            .setTitle("Upgrade to Pro")
+            .setItems(plans) { _, _ ->
+                initiatePayment("pro")
             }
             .show()
     }
@@ -1078,7 +1077,6 @@ class MainActivity : AppCompatActivity() {
         val customDns = ConfigStore.getCustomDns(this)
         val tier = ConfigStore.getUserTier(this)
 
-        // Hide Logout button for non-enterprise users
         if (tier == "enterprise") {
             btnLogout.visibility = View.VISIBLE
         } else {
