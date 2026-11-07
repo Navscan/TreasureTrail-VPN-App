@@ -321,17 +321,8 @@ class MainActivity : AppCompatActivity() {
         handler.post(pollRunnable)
         maybeCheckForUpdate()
 
-        if (awaitingPayment) {
-            awaitingPayment = false
-            checkLicenseAndRefresh()
-        } else {
-            val tier = ConfigStore.getUserTier(this)
-            if (tier != "enterprise") {
-                if (isThreatTabActive) {
-                    switchTab(false)
-                }
-            }
-        }
+        // FORCE a license refresh when resuming (e.g., returning from LoginActivity)
+        checkLicenseAndRefresh()
     }
 
     override fun onPause() {
@@ -356,9 +347,18 @@ class MainActivity : AppCompatActivity() {
             val result = AuthClient.checkLicense(token)
             handler.post {
                 if (result.isActive) {
+                    // Update the local tier based on what the backend says
                     ConfigStore.saveAuth(this, token, result.tier)
-                    EventLog.write(this, "OK", "License verified: ${result.tier}")
                     refreshUi()
+                    
+                    // If we just logged in as Enterprise, update the UI immediately
+                    if (result.tier == "enterprise") {
+                        val savedVoucher = ConfigStore.getVoucherCode(this)
+                        if (savedVoucher == null) {
+                             // Prompt for voucher if they don't have one saved
+                             showVoucherDialog(null)
+                        }
+                    }
                 }
             }
         }
@@ -378,7 +378,6 @@ class MainActivity : AppCompatActivity() {
         val token = ConfigStore.getAuthToken(this) ?: return
         val currentEmail = ConfigStore.getUserEmail(this)
         
-        // If the user is a Guest (or email failed to parse), prompt for a real email
         if (currentEmail.endsWith("@cpvpn.local") || currentEmail.isBlank()) {
             promptForEmail(plan)
             return
