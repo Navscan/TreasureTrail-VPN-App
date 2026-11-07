@@ -278,12 +278,10 @@ class MainActivity : AppCompatActivity() {
                     .show()
             }
             tier == "enterprise" || !isGuest -> {
-                // If they are enterprise, OR if they logged in with a real email (awaiting voucher)
                 val savedVoucher = ConfigStore.getVoucherCode(this)
                 showVoucherDialog(savedVoucher)
             }
             else -> {
-                // Guest menu
                 val options = arrayOf("Login as Enterprise User", "Upgrade to Pro")
                 AlertDialog.Builder(this)
                     .setTitle("Open Tier")
@@ -331,7 +329,6 @@ class MainActivity : AppCompatActivity() {
         val tier = ConfigStore.getUserTier(this)
         val isGuest = email.endsWith("@cpvpn.local") || email.isBlank()
 
-        // If they are logged in with a real email but haven't entered a voucher yet, prompt them automatically
         if (!isGuest && tier == "free" && ConfigStore.getVoucherCode(this) == null && !hasPromptedForVoucher) {
             hasPromptedForVoucher = true
             showVoucherDialog(null)
@@ -910,7 +907,7 @@ class MainActivity : AppCompatActivity() {
 
         val dialog = AlertDialog.Builder(this)
             .setView(view)
-            .setCancelable(false) // Force them to enter it if they are in this flow
+            .setCancelable(false)
             .create()
 
         btnCancel.setOnClickListener { dialog.dismiss() }
@@ -929,6 +926,12 @@ class MainActivity : AppCompatActivity() {
             btnSubmit.isEnabled = false
             btnCancel.isEnabled = false
             txtError.visibility = View.GONE
+
+            // Stop VPN before provisioning to prevent network drop during API call
+            if (ConfigStore.isVpnRunning(this)) {
+                VpnService.stop(this)
+                Thread.sleep(1000)
+            }
 
             executor.execute {
                 val voucherResult = ApiClient.redeemVoucher(token, code)
@@ -994,6 +997,12 @@ class MainActivity : AppCompatActivity() {
         if (!isVoucherComplete(code)) return
         val token = ConfigStore.getAuthToken(this) ?: return
         
+        // Stop VPN before provisioning to prevent network drop during API call
+        if (ConfigStore.isVpnRunning(this)) {
+            VpnService.stop(this)
+            Thread.sleep(1000)
+        }
+
         executor.execute {
             val voucherResult = ApiClient.redeemVoucher(token, code)
             handler.post {
@@ -1092,7 +1101,7 @@ class MainActivity : AppCompatActivity() {
         btnTopRightStatus.text = when {
             tier == "enterprise" -> "Enterprise"
             tier == "pro" -> "Pro"
-            !isGuest -> "Enterprise" // They are logged in as a real user waiting for voucher
+            !isGuest -> "Enterprise"
             else -> "Open"
         }
 
