@@ -4,7 +4,9 @@ object Config {
     const val BASE_URL = "https://api.flipstack.store/cpvpn"
     const val ENDPOINT_REGISTER = "$BASE_URL/api/register"
     const val ENDPOINT_HEALTH = "$BASE_URL/api/health"
-    const val ENDPOINT_CERBERUS = "https://api.flipstack.store/api/cerberus/status"
+    
+    // UPDATED: Now points to the CPvpn backend (Port 3100) which has the cerberus.js routes
+    const val ENDPOINT_CERBERUS = "$BASE_URL/api/cerberus/status"
 
     // SaaS Auth Endpoints
     const val ENDPOINT_AUTH_LOGIN = "$BASE_URL/api/auth/login"
