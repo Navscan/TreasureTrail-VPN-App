@@ -7,6 +7,7 @@ import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import org.json.JSONObject
 import java.util.concurrent.Executors
 
 class LoginActivity : AppCompatActivity() {
@@ -82,10 +83,15 @@ class LoginActivity : AppCompatActivity() {
                         finish()
                     }
                     is AuthResult.Failure -> {
-                        if (!isLoginMode && result.error == "email_exists") {
+                        // Extract the exact message from the backend JSON response
+                        val errorMsg = extractBackendMessage(result.error)
+                        
+                        if (!isLoginMode && (result.error == "email_exists" || errorMsg.contains("already exists", ignoreCase = true))) {
                             showError("Email already registered. Try logging in.")
                         } else {
-                            showError("Failed: ${result.error}")
+                            // This will display the HIBP message ("Password appeared in X breaches") 
+                            // or the complexity rules directly to the user
+                            showError(errorMsg)
                         }
                     }
                     AuthResult.NetworkError -> {
@@ -93,6 +99,34 @@ class LoginActivity : AppCompatActivity() {
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Helper to parse the JSON string returned by the backend.
+     * If the string is JSON and contains a "message" field, it returns it.
+     * Otherwise, it cleans up the raw error code and returns that.
+     */
+    private fun extractBackendMessage(rawError: String?): String {
+        if (rawError.isNullOrBlank()) return "An unknown error occurred."
+        
+        return try {
+            if (rawError.trim().startsWith("{")) {
+                val json = JSONObject(rawError)
+                if (json.has("message")) {
+                    json.getString("message")
+                } else if (json.has("error")) {
+                    json.getString("error").replace("_", " ").capitalize()
+                } else {
+                    rawError
+                }
+            } else {
+                // It's a raw string like "password_too_short"
+                rawError.replace("_", " ").capitalize()
+            }
+        } catch (e: Exception) {
+            // If parsing fails, just return the raw error
+            rawError
         }
     }
 
